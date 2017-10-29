@@ -1,0 +1,31 @@
+{
+	"author": "tav <tav@espians.com>",
+	"bin": {
+		"protokit": "./bin/protokit"
+	},
+	"dependencies": {},
+	"description": "Component Kit for creating GOV.UK frontend services",
+	"files": [
+		"AUTHORS.md",
+		"UNLICENSE.md",
+		"bin/",
+		"dist/",
+		"lib/"
+	],
+	"homepage": "https://github.com/tav/govuk-component-kit",
+	"keywords": [
+		"govuk",
+		"frontend"
+	],
+	"license": "SEE LICENSE IN UNLICENSE.md",
+	"main": "node_modules/componentkit/index.js",
+	"name": "componentkit",
+	"repository": "https://github.com/tav/govuk-component-kit",
+	"scripts": {
+		"build": "./bin/build --watch",
+		"clean": "rm -rf ./dist",
+		"postinstall": "./bin/symlink-packages",
+		"prepare": "rm -rf ./dist && ./bin/build"
+	},
+	"version": "0.0.8"
+}
