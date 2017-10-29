@@ -1,0 +1,16 @@
+#! /usr/bin/env node
+
+// Public Domain (-) 2017-present The Component Kit Authors.
+// See the Component Kit UNLICENSE file for details.
+
+//! Script to build packages that are using ES Modules syntax.
+
+const packages = require('../lib/pkgutil/packages') // use the relative path as pkgutil may not yet be symlinked into node_modules
+
+function main() {
+	for (let pkg of packages.info().esm) {
+		console.log('>> Building', pkg)
+	}
+}
+
+main()

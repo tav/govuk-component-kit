@@ -1,0 +1,10 @@
+#! /usr/bin/env node
+
+// Public Domain (-) 2017-present The Component Kit Authors.
+// See the Component Kit UNLICENSE file for details.
+
+//! Script to run protokit.
+
+const protokit = require('protokit')
+
+protokit.run(process.argv)
