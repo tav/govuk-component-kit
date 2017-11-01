@@ -3,14 +3,19 @@
 	"bin": {
 		"protokit": "./bin/protokit"
 	},
-	"dependencies": {},
+	"dependencies": {
+		"@types/node": "^8.0.47",
+		"typescript": "^2.6.1"
+	},
 	"description": "Component Kit for creating GOV.UK frontend services",
+	"devDependencies": {
+		"tslint": "^5.8.0"
+	},
 	"files": [
 		"AUTHORS.md",
 		"UNLICENSE.md",
 		"bin/",
-		"dist/",
-		"lib/"
+		"dist/"
 	],
 	"homepage": "https://github.com/tav/govuk-component-kit",
 	"keywords": [
@@ -22,10 +27,11 @@
 	"name": "componentkit",
 	"repository": "https://github.com/tav/govuk-component-kit",
 	"scripts": {
-		"build": "./bin/build --watch",
+		"build": "tsc",
 		"clean": "rm -rf ./dist",
-		"postinstall": "./bin/symlink-packages",
-		"prepare": "rm -rf ./dist && ./bin/build"
+		"postinstall": "ln -s ../dist node_modules/homeoffice",
+		"prepare": "rm -rf ./dist && tsc",
+		"watch": "tsc --watch"
 	},
 	"version": "0.0.8"
 }
