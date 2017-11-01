@@ -1,7 +1,7 @@
 // Public Domain (-) 2017-present The Component Kit Authors.
 // See the Component Kit UNLICENSE file for details.
 
-const lexer = require('componentkit/lexer')
+import * as lexer from 'homeoffice/lexer'
 
 module.exports = lexer.defineConstants({
 	// Basic character sets.
@@ -20,18 +20,18 @@ module.exports = lexer.defineConstants({
 
 	// Delimiters.
 	LEFT_ANGLE_BRACKET: '<',
-	RIGHT_ANGLE_BRACKET: '>',
 	LEFT_BRACE: '{',
-	RIGHT_BRACE: '}',
 	LEFT_PAREN: '(',
-	RIGHT_PAREN: ')',
 	LEFT_SQUARE_BRACKET: '[',
+	RIGHT_ANGLE_BRACKET: '>',
+	RIGHT_BRACE: '}',
+	RIGHT_PAREN: ')',
 	RIGHT_SQUARE_BRACKET: ']',
 
 	// Quote marks.
-	SINGLE_QUOTES: "'",
-	DOUBLE_QUOTES: '"',
 	BACK_TICK: '`',
+	DOUBLE_QUOTES: '"',
+	SINGLE_QUOTES: "'",
 
 	// Special chars.
 	HASH: '#',
