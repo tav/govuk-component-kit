@@ -6,6 +6,8 @@
 // It is inspired by Rob Pike's talk on lexical scanning:
 // https://talks.golang.org/2011/lex.slide
 
+import {byte} from 'govuk/types'
+
 // `EOF` is used by the Lexer to signal that it has reached the end of the
 // input. The value of -1 as an unsigned byte will be `\xff', which is an
 // invalid UTF-8 byte, so should not cause any issues when we do searches
@@ -67,7 +69,7 @@ export class Lexer {
 
 	// `accept` consumes the next byte if it's from the set of specified chars. It
 	// also returns a boolean indicating whether a byte was consumed or not.
-	accept(chars: number[]) {
+	accept(chars: byte[]) {
 		if (chars.includes(this.next())) {
 			return true
 		}
@@ -77,7 +79,7 @@ export class Lexer {
 
 	// `acceptRun` keeps consuming bytes while they keep matching the set of
 	// specified chars.
-	acceptRun(chars: number[]) {
+	acceptRun(chars: byte[]) {
 		while (chars.includes(this.next())) {
 			continue
 		}
@@ -87,7 +89,7 @@ export class Lexer {
 	// `acceptExcluding` consumes the next byte if it isn't in the set of
 	// specified chars. It also returns a boolean indicating whethere a byte was
 	// consumed or not.
-	acceptExcluding(chars: number[]) {
+	acceptExcluding(chars: byte[]) {
 		if (!chars.includes(this.next())) {
 			return true
 		}
@@ -97,7 +99,7 @@ export class Lexer {
 
 	// `acceptUntil` keeps consuming bytes until one matching the set of specified
 	// chars is found.
-	acceptUntil(chars: number[]) {
+	acceptUntil(chars: byte[]) {
 		while (!chars.includes(this.next())) {
 			continue
 		}
@@ -197,7 +199,7 @@ export class Lexer {
 
 	// `startsWith` returns whether the next bytes match the given prefix, and
 	// doesn't consume any bytes whilst doing the matching.
-	startsWith(prefixChars: number[]) {
+	startsWith(prefixChars: byte[]) {
 		for (let i = 0; i < prefixChars.length; i++) {
 			if (this.input[this.pos + i] !== prefixChars[i]) {
 				return false
@@ -210,8 +212,8 @@ export class Lexer {
 		let line = this.line
 		let column = this.column
 		for (let idx = this.start, end = this.pos; idx < end; idx++) {
-			const byte = this.input[idx]
-			if (byte === NEWLINE) {
+			const char = this.input[idx]
+			if (char === NEWLINE) {
 				line += 1
 				column = 0
 			} else {
