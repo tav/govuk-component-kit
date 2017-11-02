@@ -1,7 +1,7 @@
 // Public Domain (-) 2017-present The Component Kit Authors.
 // See the Component Kit UNLICENSE file for details.
 
-import * as lexer from 'homeoffice/lexer'
+import * as lexer from 'govuk/lexer'
 
 // Self-closing tags are specified as void elements in HTML5:
 // http://w3c.github.io/html/syntax.html#writing-html-documents-elements

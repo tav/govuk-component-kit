@@ -29,7 +29,7 @@
 	"scripts": {
 		"build": "tsc",
 		"clean": "rm -rf ./dist",
-		"postinstall": "ln -s ../dist node_modules/homeoffice",
+		"postinstall": "ln -s ../dist node_modules/govuk",
 		"prepare": "rm -rf ./dist && tsc",
 		"watch": "tsc --watch"
 	},

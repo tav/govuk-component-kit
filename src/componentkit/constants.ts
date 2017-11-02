@@ -1,9 +1,9 @@
 // Public Domain (-) 2017-present The Component Kit Authors.
 // See the Component Kit UNLICENSE file for details.
 
-import * as lexer from 'homeoffice/lexer'
+import * as lexer from 'govuk/lexer'
 
-module.exports = lexer.defineConstants({
+export default lexer.defineConstants({
 	// Basic character sets.
 	ALPHA: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
 	ALPHA_LOWER: 'abcdefghijklmnopqrstuvwxyz',
