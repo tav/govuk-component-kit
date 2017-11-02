@@ -1,38 +1,42 @@
 // Public Domain (-) 2017-present The Component Kit Authors.
 // See the Component Kit UNLICENSE file for details.
 
-import * as lexer from 'govuk/lexer'
+import * as bytes from 'govuk/bytes'
 
-export default lexer.defineConstants({
-	// Basic character sets.
-	ALPHA: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
-	ALPHA_LOWER: 'abcdefghijklmnopqrstuvwxyz',
-	ALPHA_NUMERIC:
-		'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
-	ALPHA_UPPER: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-	NUMERIC: '0123456789',
+// Basic character sets.
+export const ALPHA = bytes.fromString(
+	'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+)
 
-	// Whitespace.
-	NEWLINE: '\n',
-	SPACE: ' ',
-	TAB: '\t',
-	WHITESPACE: ' \n\t',
+export const ALPHA_LOWER = bytes.fromString('abcdefghijklmnopqrstuvwxyz')
+export const ALPHA_UPPER = bytes.fromString('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
 
-	// Delimiters.
-	LEFT_ANGLE_BRACKET: '<',
-	LEFT_BRACE: '{',
-	LEFT_PAREN: '(',
-	LEFT_SQUARE_BRACKET: '[',
-	RIGHT_ANGLE_BRACKET: '>',
-	RIGHT_BRACE: '}',
-	RIGHT_PAREN: ')',
-	RIGHT_SQUARE_BRACKET: ']',
+export const ALPHA_NUMERIC = bytes.fromString(
+	'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+)
 
-	// Quote marks.
-	BACK_TICK: '`',
-	DOUBLE_QUOTES: '"',
-	SINGLE_QUOTES: "'",
+export const NUMERIC = bytes.fromString('0123456789')
 
-	// Special chars.
-	HASH: '#',
-})
+// Whitespace.
+export const NEWLINE = bytes.fromString('\n')
+export const SPACE = bytes.fromString(' ')
+export const TAB = bytes.fromString('\t')
+export const WHITESPACE = bytes.fromString(' \n\t')
+
+// Delimiters.
+export const LEFT_ANGLE_BRACKET = bytes.fromString('<')
+export const RIGHT_ANGLE_BRACKET = bytes.fromString('>')
+export const LEFT_BRACE = bytes.fromString('{')
+export const RIGHT_BRACE = bytes.fromString('}')
+export const LEFT_PAREN = bytes.fromString('(')
+export const RIGHT_PAREN = bytes.fromString(')')
+export const LEFT_SQUARE_BRACKET = bytes.fromString('[')
+export const RIGHT_SQUARE_BRACKET = bytes.fromString(']')
+
+// Quote marks.
+export const BACK_TICK = bytes.fromString('`')
+export const DOUBLE_QUOTES = bytes.fromString('"')
+export const SINGLE_QUOTES = bytes.fromString("'")
+
+// Special chars.
+export const HASH = bytes.fromString('#')
