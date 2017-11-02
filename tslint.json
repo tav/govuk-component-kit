@@ -10,8 +10,18 @@
             true,
             "tabs"
         ],
+        "interface-name": [
+            true,
+            "never-prefix"
+        ],
         "member-access": false,
         "no-console": false,
+        "no-unused-variable": [
+            true,
+            {
+                "check-parameters": false
+            }
+        ],
         "quotemark": false,
         "semicolon": [
             true,

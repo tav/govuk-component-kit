@@ -29,6 +29,7 @@
 	"scripts": {
 		"build": "tsc",
 		"clean": "rm -rf ./dist",
+		"lint": "tslint --project tsconfig.json",
 		"postinstall": "ln -s ../dist node_modules/govuk",
 		"prepare": "rm -rf ./dist && tsc",
 		"watch": "tsc --watch"
