@@ -1,7 +1,7 @@
 // Public Domain (-) 2017-present The Component Kit Authors.
 // See the Component Kit UNLICENSE file for details.
 
-//! Package lexer implements a minimalist lexer framework.
+//! Package lexer implements a minimalist lexing framework.
 //
 // It is inspired by Rob Pike's talk on lexical scanning:
 // https://talks.golang.org/2011/lex.slide
@@ -31,27 +31,9 @@ export interface TokenType {
 	value: string
 }
 
+// `StateFunction` represents the state of the lexer as a function that returns
+// the next state.
 export type StateFunction = ((l: Lexer) => StateFunction | void) | void | null
-
-// `defineConstants` takes a map of property names and string values and creates
-// a mapping of those property names to those string values turned into Buffers.
-export function defineConstants(spec: {[key: string]: string}) {
-	const constants: {[key: string]: Buffer} = {}
-	for (const [k, v] of Object.entries(spec)) {
-		constants[k] = Buffer.from(v)
-	}
-	return constants
-}
-
-// `defineTokens` takes an array of strings and creates a mapping using those
-// strings as both key and value.
-export function defineTokens(spec: string[]) {
-	const tokens: {[key: string]: string} = {}
-	for (const name of spec) {
-		tokens[name] = name
-	}
-	return tokens
-}
 
 // `Lexer` provides the core API for use by state functions.
 export class Lexer {
@@ -67,9 +49,10 @@ export class Lexer {
 		this.input = Buffer.from(input)
 	}
 
-	// `accept` consumes the next byte if it's from the set of specified chars. It
-	// also returns a boolean indicating whether a byte was consumed or not.
-	accept(chars: byte[]) {
+	// `acceptNext` consumes the next byte if it's from the set of specified
+	// chars. It also returns a boolean indicating whether a byte was consumed
+	// or not.
+	acceptNext(chars: byte[]) {
 		if (chars.includes(this.next())) {
 			return true
 		}
@@ -77,19 +60,10 @@ export class Lexer {
 		return false
 	}
 
-	// `acceptRun` keeps consuming bytes while they keep matching the set of
-	// specified chars.
-	acceptRun(chars: byte[]) {
-		while (chars.includes(this.next())) {
-			continue
-		}
-		this.backup()
-	}
-
-	// `acceptExcluding` consumes the next byte if it isn't in the set of
-	// specified chars. It also returns a boolean indicating whethere a byte was
+	// `acceptNextUnless` consumes the next byte if it isn't in the set of
+	// specified chars. It also returns a boolean indicating whether a byte was
 	// consumed or not.
-	acceptExcluding(chars: byte[]) {
+	acceptNextUnless(chars: byte[]) {
 		if (!chars.includes(this.next())) {
 			return true
 		}
@@ -97,13 +71,30 @@ export class Lexer {
 		return false
 	}
 
-	// `acceptUntil` keeps consuming bytes until one matching the set of specified
-	// chars is found.
+	// `acceptUntil` keeps consuming bytes until any of the specified chars are
+	// seen. It also returns a boolean indicating whether anything was consumed
+	// or not.
 	acceptUntil(chars: byte[]) {
+		let consumed = false
 		while (!chars.includes(this.next())) {
+			consumed = true
 			continue
 		}
 		this.backup()
+		return consumed
+	}
+
+	// `acceptWhile` keeps consuming bytes while they keep matching any of the
+	// specified chars. It also returns a boolean indicating whether anything
+	// was consumed or not.
+	acceptWhile(chars: byte[]) {
+		let consumed = false
+		while (chars.includes(this.next())) {
+			consumed = true
+			continue
+		}
+		this.backup()
+		return consumed
 	}
 
 	// `backup` steps back one byte.
@@ -144,10 +135,11 @@ export class Lexer {
 	// `next` returns the next byte or returns EOF if it has reached the end of
 	// the input.
 	next() {
-		if (this.pos >= this.input.length) {
+		this.pos++
+		if (this.pos > this.input.length) {
 			return EOF
 		}
-		return this.input[this.pos++]
+		return this.input[this.pos]
 	}
 
 	// `peek` lets you take a look at the next byte without consuming it.
@@ -155,6 +147,11 @@ export class Lexer {
 		const char = this.next()
 		this.backup()
 		return char
+	}
+
+	// `prev` returns the Nth previous byte.
+	prev(n = 1) {
+		return this.input[this.pos - n]
 	}
 
 	// `run` takes an initial state function and keeps lexing until it runs into
