@@ -5,6 +5,7 @@
     ],
     "jsRules": {},
     "rules": {
+        "arrow-parens": [true, "ban-single-arg-parens"],
         "comment-format": false,
         "indent": [
             true,
