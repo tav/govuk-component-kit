@@ -4,8 +4,8 @@
 		"protokit": "./bin/protokit"
 	},
 	"dependencies": {
-		"@types/node": "^8.0.47",
-		"typescript": "^2.6.1"
+		"@types/node": "8.0.50",
+		"typescript": "2.6.1"
 	},
 	"description": "Component Kit for creating GOV.UK frontend services",
 	"devDependencies": {
