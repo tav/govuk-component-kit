@@ -27,7 +27,7 @@ export interface TokenType {
 	column: number
 	line: number
 	pos: number
-	type: string
+	type: number
 	value: string
 }
 
@@ -37,13 +37,14 @@ export type StateFunction = ((l: Lexer) => StateFunction | void) | void | null
 
 // `Lexer` provides the core API for use by state functions.
 export class Lexer {
-	column: number = 0
+	column = 0
 	error?: ErrorType = undefined
 	input: Buffer
-	line: number = 0
-	pos: number = 0
-	start: number = 0
+	line = 0
+	pos = 0
+	start = 0
 	tokens: TokenType[] = []
+	width = 0
 
 	constructor(input: string) {
 		this.input = Buffer.from(input)
@@ -52,9 +53,15 @@ export class Lexer {
 	// `acceptNext` consumes the next byte if it's from the set of specified
 	// chars. It also returns a boolean indicating whether a byte was consumed
 	// or not.
-	acceptNext(chars: byte[]) {
-		if (chars.includes(this.next())) {
-			return true
+	acceptNext(match: byte | Set<byte>) {
+		if (typeof match === 'number') {
+			if (match === this.next()) {
+				return true
+			}
+		} else {
+			if (match.has(this.next())) {
+				return true
+			}
 		}
 		this.backup()
 		return false
@@ -63,48 +70,70 @@ export class Lexer {
 	// `acceptNextUnless` consumes the next byte if it isn't in the set of
 	// specified chars. It also returns a boolean indicating whether a byte was
 	// consumed or not.
-	acceptNextUnless(chars: byte[]) {
-		if (!chars.includes(this.next())) {
-			return true
+	acceptNextUnless(match: byte | Set<byte>) {
+		if (typeof match === 'number') {
+			if (match !== this.next()) {
+				return true
+			}
+		} else {
+			if (!match.has(this.next())) {
+				return true
+			}
 		}
 		this.backup()
 		return false
 	}
 
 	// `acceptUntil` keeps consuming bytes until any of the specified chars are
-	// seen. It also returns a boolean indicating whether anything was consumed
-	// or not.
-	acceptUntil(chars: byte[]) {
+	// seen or EOF is reached. It also returns a boolean indicating whether
+	// anything was consumed.
+	acceptUntil(match: byte | Set<byte>) {
 		let consumed = false
-		while (!chars.includes(this.next())) {
-			consumed = true
-			continue
+		if (typeof match === 'number') {
+			while (true) {
+				const char = this.next()
+				if (char === EOF) {
+					return consumed
+				}
+				if (match === char) {
+					this.backup()
+					return consumed
+				}
+				consumed = true
+			}
+		} else {
+			while (true) {
+				const char = this.next()
+				if (char === EOF) {
+					return consumed
+				}
+				if (match.has(char)) {
+					this.backup()
+					return consumed
+				}
+				consumed = true
+			}
 		}
-		this.backup()
-		return consumed
 	}
 
 	// `acceptWhile` keeps consuming bytes while they keep matching any of the
 	// specified chars. It also returns a boolean indicating whether anything
-	// was consumed or not.
-	acceptWhile(chars: byte[]) {
+	// was consumed.
+	acceptWhile(match: byte | Set<byte>) {
 		let consumed = false
-		while (chars.includes(this.next())) {
-			consumed = true
-			continue
+		if (typeof match === 'number') {
+			while (match === this.next()) {
+				consumed = true
+				continue
+			}
+		} else {
+			while (match.has(this.next())) {
+				consumed = true
+				continue
+			}
 		}
 		this.backup()
 		return consumed
-	}
-
-	// `backup` steps back one byte.
-	backup() {
-		if (this.pos - 1 < this.start) {
-			throw new Error(
-				'lexer: backup must only be called once per invocation of next()'
-			)
-		}
-		this.pos -= 1
 	}
 
 	// `consume` eats the next N bytes without advancing the lexer.
@@ -116,7 +145,7 @@ export class Lexer {
 
 	// `emit` advances the lexer and adds a new token with the current value and
 	// with the specified type.
-	emit(type: string) {
+	emit(type: number) {
 		this.tokens.push({
 			column: this.column,
 			line: this.line,
@@ -127,6 +156,11 @@ export class Lexer {
 		this.advance()
 	}
 
+	// `eof` returns whether the lexer has reached the end of the input.
+	eof() {
+		return this.pos >= this.input.length
+	}
+
 	// `hasValue` returns whether there is a pending value.
 	hasValue() {
 		return this.pos > this.start
@@ -135,11 +169,12 @@ export class Lexer {
 	// `next` returns the next byte or returns EOF if it has reached the end of
 	// the input.
 	next() {
-		this.pos++
-		if (this.pos > this.input.length) {
+		if (this.pos >= this.input.length) {
+			this.width = 0
 			return EOF
 		}
-		return this.input[this.pos]
+		this.width = 1
+		return this.input[this.pos++]
 	}
 
 	// `peek` lets you take a look at the next byte without consuming it.
@@ -196,13 +231,26 @@ export class Lexer {
 
 	// `startsWith` returns whether the next bytes match the given prefix, and
 	// doesn't consume any bytes whilst doing the matching.
-	startsWith(prefixChars: byte[]) {
-		for (let i = 0; i < prefixChars.length; i++) {
-			if (this.input[this.pos + i] !== prefixChars[i]) {
+	startsWith(prefix: byte | byte[]) {
+		if (typeof prefix === 'number') {
+			return this.input[this.pos] === prefix
+		}
+		for (let i = 0; i < prefix.length; i++) {
+			if (this.input[this.pos + i] !== prefix[i]) {
 				return false
 			}
 		}
 		return true
+	}
+
+	// `willAcceptNext` returns whether the next byte is from the set of
+	// specified chars.
+	willAcceptNext(match: byte | Set<byte>) {
+		const char = this.peek()
+		if (typeof match === 'number') {
+			return match === char
+		}
+		return match.has(char)
 	}
 
 	private advance() {
@@ -220,5 +268,10 @@ export class Lexer {
 		this.column = column
 		this.line = line
 		this.start = this.pos
+	}
+
+	private backup() {
+		this.pos -= this.width
+		this.width = 0
 	}
 }
