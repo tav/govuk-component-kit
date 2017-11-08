@@ -5,6 +5,6 @@
 
 //! Script to run protokit.
 
-const protokit = require('govuk/protokit')
+const protokit = require('govuk/cmd/protokit')
 
 protokit.main(process.argv)
