@@ -1,97 +1,75 @@
 // Public Domain (-) 2017-present The Component Kit Authors.
 // See the Component Kit UNLICENSE file for details.
 
-import {Logo} from 'govuk/cmd/protokit/banner'
-import {dirname, join} from 'path'
+import * as banner from 'govuk/cmd/protokit/banner'
+import * as cmdinit from 'govuk/cmd/protokit/cmdinit'
+import * as cmdnew from 'govuk/cmd/protokit/cmdnew'
+import * as cmdrun from 'govuk/cmd/protokit/cmdrun'
+import * as log from 'govuk/log'
+import * as optparse from 'govuk/optparse'
+import * as path from 'path'
 
-const commands: {[key: string]: (args: string[]) => void} = {
-	init: cmdInit,
-	new: cmdNew,
-	run: cmdRun,
+const COMMANDS: {[key: string]: (args: string[]) => void} = {
+	init: cmdinit.main,
+	new: cmdnew.main,
+	run: cmdrun.main,
 }
 
-const help: {[key: string]: string} = {
-	init: 'create an empty protokit repo',
-	new: 'create a new prototype path/journey',
-	run: 'run the protokit server',
+const INFO: {[key: string]: string} = {
+	init: cmdinit.INFO,
+	new: cmdnew.INFO,
+	run: cmdrun.INFO,
 }
 
-const detailed: {[key: string]: string} = {
-	run: `
-    -p, --port      specify the port to run on [8080]
-`,
+const FLAGS: {[key: string]: string} = {
+	run: cmdrun.FLAGS,
 }
 
-function cmdHelp(args: string[]) {
+function cmdhelp(args: string[]) {
 	if (!args.length) {
 		printUsage()
 		return
 	}
 	const cmd = args[0]
-	const usage = help[cmd]
-	if (!usage) {
-		unknownCmd(cmd)
+	const info = INFO[cmd]
+	if (!info) {
+		unknown(cmd)
 		process.exit(1)
 	}
-	const options = detailed[cmd]
-	console.log(Logo)
-	console.log(`Usage: protokit ${cmd}${options ? ' [OPTIONS]' : ''}\n`)
-	if (options) {
+	const flags = FLAGS[cmd]
+	console.log(banner.LOGO)
+	console.log(`Usage: protokit ${cmd}${flags ? ' [flags]' : ''}\n`)
+	if (flags) {
 		console.log('Options:')
-		console.log(options)
+		console.log(flags)
 	}
-	console.log(`This command will ${usage}.`)
-}
-
-function cmdInit(args: string[]) {}
-
-function cmdNew(args: string[]) {}
-
-function cmdRun(args: string[]) {
-	const port = getPort(args, '-p') || getPort(args, '--port') || 8080
-	console.log(port)
-}
-
-function getPort(args: string[], param: string) {
-	const idx = args.indexOf(param)
-	if (idx === -1) {
-		return
-	}
-	const arg = args[idx + 1]
-	if (!arg) {
-		return
-	}
-	const port = parseInt(arg, 10)
-	if (isNaN(port)) {
-		return
-	}
-	return port
+	console.log(`This command will ${info}.`)
 }
 
 function printUsage() {
-	console.log(Logo)
+	console.log(banner.LOGO)
 	console.log('Usage: protokit COMMAND [OPTIONS]\n')
 	console.log('Available commands:\n')
-	for (const cmd of Object.keys(commands).sort()) {
-		console.log(`      ${cmd}\t${help[cmd]}`)
+	for (const cmd of Object.keys(COMMANDS).sort()) {
+		console.log(`      ${cmd}\t${INFO[cmd]}`)
 	}
 	console.log('')
 }
 
 function printVersion() {
 	const modpath = require.resolve('govuk/cmd/protokit')
-	const root = dirname(dirname(dirname(dirname(modpath))))
-	const manifest = join(root, 'package.json')
+	const root = path.dirname(path.dirname(path.dirname(path.dirname(modpath))))
+	const manifest = path.join(root, 'package.json')
 	console.log(require(manifest).version)
 }
 
-function unknownCmd(cmd: string) {
-	console.log(`ERROR: Unknown protokit command: "${cmd}"`)
+function unknown(cmd: string) {
+	log.error(`protokit: unknown command: "${cmd}"`)
 }
 
 // `main` runs the protokit command with the given args.
 export function main(argv: string[]) {
-	const args = argv.slice(3)
+	const args = optparse.Args.from(argv.slice(3))
 	const cmd = argv[2]
 	switch (cmd) {
 		case undefined:
@@ -100,7 +78,7 @@ export function main(argv: string[]) {
 			printUsage()
 			process.exit()
 		case 'help':
-			cmdHelp(args)
+			cmdhelp(args)
 			process.exit()
 		case 'version':
 		case '-v':
@@ -108,13 +86,13 @@ export function main(argv: string[]) {
 			printVersion()
 			process.exit()
 	}
-	const handler = commands[cmd]
+	const handler = COMMANDS[cmd]
 	if (!handler) {
-		unknownCmd(cmd)
+		unknown(cmd)
 		process.exit(1)
 	}
 	if (args.includes('-h') || args.includes('--help')) {
-		cmdHelp([cmd])
+		cmdhelp([cmd])
 		process.exit()
 	}
 	handler(args)
