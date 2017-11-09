@@ -3,7 +3,7 @@
 
 /* tslint:disable:no-trailing-whitespace */
 
-export const Logo = `
+export const LOGO = `
                      _        _    _ _   
      _ __  _ __ ___ | |_ ___ | | _(_) |_ 
     | '_ \\| '__/ _ \\| __/ _ \\| |/ / | __|
