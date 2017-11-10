@@ -5,6 +5,14 @@
 
 // `Args` provides a utility class for dealing with flagged arguments.
 export class Args extends Array {
+	static from(value: string[]) {
+		const args = new Args(value.length)
+		for (const elem of value) {
+			args.push(elem)
+		}
+		return args
+	}
+
 	get(...flags: string[]) {
 		for (const flag of flags) {
 			const idx = this.indexOf(flag)
