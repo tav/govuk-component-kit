@@ -14,7 +14,7 @@ export function codepoint(char: string): byte {
 	}
 	const cp = from(char)[0]
 	if (cp > 127) {
-		throw TypeError(`bytes: codepoint for "${s}" is outside the ascii range`)
+		throw TypeError(`bytes: codepoint for "${char}" is outside the ascii range`)
 	}
 	return cp
 }
