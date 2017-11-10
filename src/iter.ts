@@ -3,24 +3,33 @@
 
 //! The iter module provides support functionality for dealing with iterators.
 
-// `range` generates the numbers in the given range on demand.
-function* range(start: number, stop?: number, step?: number) {
+// `enumerate` is an iterator for the `[index, value]` of the given iterable.
+export function* enumerate<T>(
+	iterable: IterableIterator<T> | T[],
+	start = 1
+): IterableIterator<[number, T]> {
+	let idx = start
+	for (const elem of iterable) {
+		yield [idx, elem]
+		idx++
+	}
+}
+
+// `range` generates the numbers in the given range on demand, inclusive of the
+// `stop` value. If only a single parameter is given, it is taken as the `stop`
+// value and the generated range will start at 1.
+export function* range(start: number, stop?: number, step?: number) {
 	if (stop === undefined) {
 		stop = start
-		start = 0
-	}
-	if (stop < start) {
-		throw new RangeError(
-			'the `start` parameter cannot be less than the `stop` parameter'
-		)
+		start = 1
 	}
 	if (step) {
-		while (stop > start) {
+		while (stop >= start) {
 			yield start
 			start += step
 		}
 	} else {
-		while (stop > start) {
+		while (stop >= start) {
 			yield start++
 		}
 	}
