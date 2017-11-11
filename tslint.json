@@ -17,12 +17,21 @@
         ],
         "member-access": false,
         "no-console": false,
+        "no-shadowed-variable": [
+            true,
+            {
+                "import": false
+            }
+        ],
         "no-unused-variable": [
             true,
             {
                 "check-parameters": false
             }
         ],
+        "prefer-const": [true, {
+            "destructuring": "all"
+        }],
         "quotemark": false,
         "semicolon": [
             true,
