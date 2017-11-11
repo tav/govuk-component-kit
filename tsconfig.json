@@ -3,11 +3,16 @@
     "compilerOptions": {
         "alwaysStrict": true,
         "declaration": true,
+        "experimentalDecorators": true,
         "module": "commonjs",
         "noImplicitAny": true,
+        "noImplicitThis": true,
+        "noUnusedLocals": true,
         "outDir": "dist",
         "preserveConstEnums": true,
+        "pretty": true,
         "sourceMap": true,
+        "strictFunctionTypes": true,
         "strictNullChecks": true,
         "target": "ESNext"
     },
