@@ -1,0 +1,66 @@
+#! /usr/bin/env node
+
+// Public Domain (-) 2017-present The Component Kit Authors.
+// See the Component Kit UNLICENSE file for details.
+
+//! Script to run the typescript compiler.
+//
+// * It prefers the local `tsc` within node_modules over any on the global PATH.
+//
+// * It also rewrites file position indicators in error messages so that they
+//   are clickable in terminals like iTerm.
+//
+//   We need to do this as Microsoft have sadly marked
+//   https://github.com/Microsoft/TypeScript/issues/18838 as a WONTFIX.
+
+const proc = require('child_process')
+const os = require('govuk/os')
+const path = require('path')
+
+const indicator = ' \u001b[91merror\u001b[0m'
+const repo = path.dirname(__dirname)
+const local = path.join(repo, 'node_modules', 'typescript', 'bin', 'tsc')
+
+let bin = 'tsc'
+if (os.isFile(local)) {
+	bin = local
+}
+
+const tsc = proc.spawn(bin, process.argv.slice(2), {cwd: repo})
+
+let str = ''
+
+tsc.stdout.on('data', data => {
+	str += data.toString('utf8')
+	if (!str.includes('\n')) {
+		return
+	}
+	const pos = str.lastIndexOf('\n')
+	const lines = str.slice(0, pos + 1).split('\n')
+	let idx = 1
+	for (let line of lines) {
+		if (line.includes(indicator)) {
+			const [path, errmsg] = line.split(indicator)
+			const parens = path.lastIndexOf('(')
+			const newpath =
+				path.slice(0, parens) +
+				path
+					.slice(parens)
+					.replace(':', '')
+					.replace('(', ':')
+					.replace(')', '')
+					.replace(',', ':')
+			line = newpath + indicator + errmsg
+		}
+		process.stdout.write(line)
+		if (idx !== lines.length) {
+			process.stdout.write('\n')
+		}
+		idx += 1
+	}
+	str = str.slice(pos + 1)
+})
+
+tsc.stderr.on('data', data => {
+	process.stderr.write(data)
+})
