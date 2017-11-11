@@ -1,7 +1,7 @@
 // Public Domain (-) 2017-present The Component Kit Authors.
 // See the Component Kit UNLICENSE file for details.
 
-//! Package lexer implements a minimalist lexing framework.
+//! The lexer module implements a minimalist lexing framework.
 //
 // It is inspired by Rob Pike's talk on lexical scanning:
 // https://talks.golang.org/2011/lex.slide
@@ -33,10 +33,10 @@ export interface TokenType {
 
 // `StateFunction` represents the state of the lexer as a function that returns
 // the next state.
-export type StateFunction = ((l: Lexer) => StateFunction | void) | void | null
+export type StateFunction = ((s: State) => StateFunction | void) | void | null
 
-// `Lexer` provides the core API for use by state functions.
-export class Lexer {
+// `State` provides the core lexing API for use by state functions.
+export class State {
 	column = 0
 	error?: ErrorType = undefined
 	input: Buffer
@@ -146,14 +146,16 @@ export class Lexer {
 	// `emit` advances the lexer and adds a new token with the current value and
 	// with the specified type.
 	emit(type: number) {
-		this.tokens.push({
+		const token = {
 			column: this.column,
 			line: this.line,
 			pos: this.start,
 			type,
 			value: this.input.toString('utf8', this.start, this.pos),
-		})
+		}
+		this.tokens.push(token)
 		this.advance()
+		return token
 	}
 
 	// `eof` returns whether the lexer has reached the end of the input.
