@@ -9,7 +9,7 @@ import * as log from 'govuk/log'
 import * as optparse from 'govuk/optparse'
 import * as path from 'path'
 
-const COMMANDS: {[key: string]: (args: string[]) => void} = {
+const COMMANDS: {[key: string]: (args: optparse.Args) => void} = {
 	init: cmdinit.main,
 	new: cmdnew.main,
 	run: cmdrun.main,
