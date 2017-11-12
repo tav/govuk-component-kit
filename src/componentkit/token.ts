@@ -4,6 +4,8 @@
 //! Package token defines the various token types.
 
 enum token {
+	HTML_COMMENT_START,
+	HTML_COMMENT_END,
 	HTML_TAG,
 	HTML_TAG_CLOSE_LEFT_DELIMITER,
 	HTML_TAG_CLOSE_RIGHT_DELIMITER,
