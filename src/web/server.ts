@@ -18,10 +18,10 @@ export type HTTPHandler = (
 export class Dispatcher {
 	handlers: {[key: string]: Handler} = {}
 
-	constructor(private router?: Handler) {}
+	constructor(private opts: web.Options, private router?: Handler) {}
 
 	handle(req: http.IncomingMessage, res: http.ServerResponse) {
-		const ctx = new web.Context(req, res, {staticBase: '/static/'})
+		const ctx = new web.Context(req, res, this.opts)
 		let handler
 		let resp
 		if (this.router) {
@@ -31,8 +31,11 @@ export class Dispatcher {
 			try {
 				resp = handler(ctx)
 			} catch (err) {
-				log.error(`web: got unexpected error from handler: ${err}`)
+				log.error('web: got unexpected error from handler:', err)
 				resp = 500
+			}
+			if (!resp) {
+				resp = ''
 			}
 		} else {
 			resp = 404
@@ -82,11 +85,11 @@ export class Dispatcher {
 		if (!seenLength) {
 			res.setHeader('content-length', body.length)
 		}
-		if (!seenType && typeof body === 'string') {
-			if (body.startsWith('<')) {
+		if (!seenType) {
+			if (typeof body === 'string' && body.startsWith('<')) {
 				res.setHeader('content-type', 'text/html; charset=utf-8')
 			} else {
-				res.setHeader('content-type', 'text/plain; charset=utf-8')
+				res.setHeader('content-type', 'application/octet-stream')
 			}
 		}
 		res.statusCode = code
@@ -94,7 +97,7 @@ export class Dispatcher {
 			res.write(body)
 		}
 		res.end()
-		log.info(`.. ${req.method}\t${req.url}`)
+		log.request(req.method || '-', req.url || '')
 	}
 
 	register(path: string, handler: Handler) {
