@@ -26,5 +26,5 @@ function slugify(title: string) {
 }
 
 export async function main(args: optparse.Args) {
-	log.info('>> Running new')
+	log.info('>>', 'Running new')
 }
