@@ -2,6 +2,22 @@
 // See the Component Kit UNLICENSE file for details.
 
 import * as fs from 'fs'
+import * as path from 'path'
+
+function* walkFrom(
+	dir: string,
+	strip: number
+): IterableIterator<[string, string]> {
+	for (const filename of fs.readdirSync(dir)) {
+		const filepath = path.join(dir, filename)
+		if (fs.statSync(filepath).isDirectory()) {
+			yield* walkFrom(filepath, strip)
+		} else {
+			const relpath = filepath.slice(strip)
+			yield [relpath, fs.readFileSync(filepath, {encoding: 'utf8'})]
+		}
+	}
+}
 
 // `isDirectory` returns whether the given path is a directory. Note that it
 // will return false if the path is not accessible due to permissions.
@@ -21,4 +37,14 @@ export function isFile(path: string) {
 	} catch (err) {
 		return false
 	}
+}
+
+// `walk` traverses the directory recursively and yields the relative path name
+// and contents for all files found.
+export function* walk(dir: string) {
+	let strip = dir.length
+	if (dir[dir.length - 1] !== '/') {
+		strip += 1
+	}
+	yield* walkFrom(dir, strip)
 }
