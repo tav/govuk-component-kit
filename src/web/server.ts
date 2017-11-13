@@ -21,6 +21,7 @@ export class Dispatcher {
 	constructor(private opts: web.Options, private router?: Handler) {}
 
 	handle(req: http.IncomingMessage, res: http.ServerResponse) {
+		log.request(req.method || '-', req.url || '')
 		const ctx = new web.Context(req, res, this.opts)
 		let handler
 		let resp
@@ -97,7 +98,6 @@ export class Dispatcher {
 			res.write(body)
 		}
 		res.end()
-		log.request(req.method || '-', req.url || '')
 	}
 
 	register(path: string, handler: Handler) {
