@@ -4,31 +4,57 @@
 //! The log module provides logging support for configurable backends.
 
 import * as terminal from 'govuk/terminal'
-
-function pad(text: string, limit: number) {
-	if (text.length > limit) {
-		return text.slice(0, limit)
-	}
-	const out = []
-	const missing = limit - text.length
-	for (let i = 0; i < missing; i++) {
-		out.push(' ')
-	}
-	out.push(text)
-	return out.join('')
-}
+import * as util from 'util'
 
 // `error` logs the given message at the ERROR level.
-export function error(message: string, ...params: any[]) {
-	console.error(terminal.redBg(` ${pad('ERROR', 9)} `), message, ...params)
+export function error(message: string | Error, ...params: any[]) {
+	console.log('')
+	if (message instanceof Error && !params.length) {
+		console.error(
+			terminal.redBg(` ${'ERROR'.padStart(9)} `),
+			terminal.yellow(message.toString())
+		)
+		if (message.stack) {
+			console.log('')
+			console.log(
+				terminal.blue(
+					message.stack
+						.split('\n')
+						.slice(1)
+						.join('\n')
+				)
+			)
+		}
+	} else {
+		console.log(
+			terminal.redBg(` ${'ERROR'.padStart(9)} `),
+			terminal.yellow(util.format(message, ...params))
+		)
+	}
 }
 
 // `info` logs the given message at the INFO level.
-export function info(prefix: string, message: string, ...params: any[]) {
-	console.log(terminal.greenBoldBg(` ${pad(prefix, 9)} `), message, ...params)
+export function info(message: string, ...params: any[]) {
+	console.log('')
+	console.log(terminal.blackBg(` ${'INFO'.padStart(9)} `), message, ...params)
 }
 
 // `request` logs the given message at the INFO level.
 export function request(method: string, message: string, ...params: any[]) {
-	console.log(terminal.yellowBoldBg(` ${pad(method, 9)} `), message, ...params)
+	console.log('')
+	console.log(
+		terminal.whiteBg(terminal.black(` ${method.padStart(9)} `)),
+		message,
+		...params
+	)
+}
+
+// `success` logs the given message at the INFO level.
+export function success(message: string, ...params: any[]) {
+	console.log('')
+	console.log(
+		terminal.greenBg(` ${'SUCCESS'.padStart(9)} `),
+		message,
+		...params
+	)
 }
