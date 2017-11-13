@@ -6,9 +6,13 @@
 import * as terminal from 'govuk/terminal'
 import * as util from 'util'
 
+let processMode = false
+
 // `error` logs the given message at the ERROR level.
 export function error(message: string | Error, ...params: any[]) {
-	console.log('')
+	if (processMode) {
+		console.log('')
+	}
 	if (message instanceof Error && !params.length) {
 		console.error(
 			terminal.redBg(` ${'ERROR'.padStart(9)} `),
@@ -35,13 +39,17 @@ export function error(message: string | Error, ...params: any[]) {
 
 // `info` logs the given message at the INFO level.
 export function info(message: string, ...params: any[]) {
-	console.log('')
+	if (processMode) {
+		console.log('')
+	}
 	console.log(terminal.blackBg(` ${'INFO'.padStart(9)} `), message, ...params)
 }
 
 // `request` logs the given message at the INFO level.
 export function request(method: string, message: string, ...params: any[]) {
-	console.log('')
+	if (processMode) {
+		console.log('')
+	}
 	console.log(
 		terminal.whiteBg(terminal.black(` ${method.padStart(9)} `)),
 		message,
@@ -49,9 +57,17 @@ export function request(method: string, message: string, ...params: any[]) {
 	)
 }
 
+// `setProcessMode` enables process mode logging with an additional line break
+// between each log message.
+export function setProcessMode() {
+	processMode = true
+}
+
 // `success` logs the given message at the INFO level.
 export function success(message: string, ...params: any[]) {
-	console.log('')
+	if (processMode) {
+		console.log('')
+	}
 	console.log(
 		terminal.greenBg(` ${'SUCCESS'.padStart(9)} `),
 		message,
