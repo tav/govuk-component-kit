@@ -38,11 +38,17 @@ export function error(message: string | Error, ...params: any[]) {
 }
 
 // `info` logs the given message at the INFO level.
-export function info(message: string, ...params: any[]) {
+export function info(message: string | any, ...params: any[]) {
 	if (processMode) {
 		console.log('')
 	}
-	console.log(terminal.blackBg(` ${'INFO'.padStart(9)} `), message, ...params)
+	let msg = ''
+	if (typeof message === 'string') {
+		msg = message
+	} else {
+		msg = JSON.stringify(message, null, '\t')
+	}
+	console.log(terminal.blackBg(` ${'INFO'.padStart(9)} `), msg, ...params)
 }
 
 // `request` logs the given message at the INFO level.
