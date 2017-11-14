@@ -2,3 +2,8 @@
 // See the Component Kit UNLICENSE file for details.
 
 export type byte = number
+
+/*  tslint:disable:class-name */
+export interface dict {
+	[key: string]: string
+}
