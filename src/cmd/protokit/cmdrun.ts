@@ -28,7 +28,13 @@ const CONTENT_TYPES: {[key: string]: string} = {
 }
 
 function createRouter(root: string) {
-	const mgr = new component.Manager(root)
+	let mgr: component.Manager
+	try {
+		mgr = new component.Manager(root)
+	} catch (err) {
+		log.error(err)
+		process.exit(1)
+	}
 	return (ctx: web.Context) => {
 		const args = ctx.url.args
 		if (!args[0]) {
@@ -87,12 +93,12 @@ function getProtokitRoot() {
 }
 
 function serveRoot(ctx: web.Context, mgr: component.Manager) {
-	const cfgPath = path.join(mgr.root, 'site.js')
+	const cfgPath = path.join(mgr.root, 'site.ts')
 	const cfgFile = fs.readFileSync(cfgPath, {encoding: 'utf8'})
 	const module = {exports: {Org: '', Title: ''}}
 	new Function('module', 'exports', cfgFile)(module, module.exports)
 	const cfg = module.exports
-	const versions = mgr.getVersions()
+	const versions = mgr.getVersionInfos()
 	let versionsInfo
 	if (versions.length) {
 		versionsInfo = `<div class="versions">${versions
