@@ -9,13 +9,13 @@ import * as util from 'util'
 let processMode = false
 
 // `error` logs the given message at the ERROR level.
-export function error(message: string | Error, ...params: any[]) {
+export function error(message: string | Error) {
 	if (processMode) {
 		console.log('')
 	}
-	if (message instanceof Error && !params.length) {
+	if (message instanceof Error) {
 		console.error(
-			terminal.redBg(` ${'ERROR'.padStart(9)} `),
+			terminal.redBg(` ${'ERROR'.padStart(10)} `),
 			terminal.yellow(message.toString())
 		)
 		if (message.stack) {
@@ -31,35 +31,48 @@ export function error(message: string | Error, ...params: any[]) {
 		}
 	} else {
 		console.log(
-			terminal.redBg(` ${'ERROR'.padStart(9)} `),
-			terminal.yellow(util.format(message, ...params))
+			terminal.redBg(` ${'ERROR'.padStart(10)} `),
+			terminal.yellow(message)
 		)
 	}
 }
 
-// `info` logs the given message at the INFO level.
-export function info(message: string | any, ...params: any[]) {
-	if (processMode) {
-		console.log('')
-	}
-	let msg = ''
-	if (typeof message === 'string') {
-		msg = message
-	} else {
-		msg = JSON.stringify(message, null, '\t')
-	}
-	console.log(terminal.blackBg(` ${'INFO'.padStart(9)} `), msg, ...params)
-}
-
-// `request` logs the given message at the INFO level.
-export function request(method: string, message: string, ...params: any[]) {
+export function fileError(message: string, filename: string, trace: string[]) {
 	if (processMode) {
 		console.log('')
 	}
 	console.log(
-		terminal.whiteBg(terminal.black(` ${method.padStart(9)} `)),
-		message,
-		...params
+		terminal.redBg(` ${'ERROR'.padStart(10)} `),
+		terminal.yellow(`Syntax error in ${terminal.underline(filename)}`)
+	)
+	console.log('')
+	console.log(trace.map(line => `    ${line}`).join('\n'))
+	console.log('')
+	console.log(terminal.blue(`    ${message}`))
+}
+
+// `info` logs the given object/message at the INFO level.
+export function info(obj: string | any) {
+	if (processMode) {
+		console.log('')
+	}
+	let msg = ''
+	if (typeof obj === 'string') {
+		msg = obj
+	} else {
+		msg = JSON.stringify(obj, null, '\t')
+	}
+	console.log(terminal.blackBg(` ${'INFO'.padStart(10)} `), msg)
+}
+
+// `request` logs the given message at the INFO level.
+export function request(method: string, message: string) {
+	if (processMode) {
+		console.log('')
+	}
+	console.log(
+		terminal.whiteBg(terminal.black(` ${method.padStart(10)} `)),
+		message
 	)
 }
 
@@ -70,13 +83,9 @@ export function setProcessMode() {
 }
 
 // `success` logs the given message at the INFO level.
-export function success(message: string, ...params: any[]) {
+export function success(message: string) {
 	if (processMode) {
 		console.log('')
 	}
-	console.log(
-		terminal.greenBg(` ${'SUCCESS'.padStart(9)} `),
-		message,
-		...params
-	)
+	console.log(terminal.greenBg(` ${'SUCCESS'.padStart(10)} `), message)
 }
