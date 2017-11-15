@@ -32,7 +32,8 @@ export class Dispatcher {
 			try {
 				resp = handler(ctx)
 			} catch (err) {
-				log.error('web: got unexpected error from handler:', err)
+				log.error('web: got unexpected error from handler')
+				log.error(err)
 				resp = 500
 			}
 			if (!resp) {
@@ -134,11 +135,11 @@ export function run(port: number, host: string, handler: HTTPHandler) {
 			return
 		}
 		if (err.code === 'EADDRINUSE') {
-			iresolve(`server: something is already running on port ${port}`)
+			iresolve(`web: something is already running on port ${port}`)
 			return
 		}
 		iresolve(
-			`server: could not start web server on ${host}${(host && ':') ||
+			`web: could not start server on ${host}${(host && ':') ||
 				''}${port}: ${err.toString()}`
 		)
 	}
