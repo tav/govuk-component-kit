@@ -197,6 +197,7 @@ export async function main(args: optparse.Args) {
 		log.error(err)
 		process.exit(1)
 	}
+	log.setProcessMode()
 	const router = createRouter(root)
 	const opts = {env, staticBase: '/static/'}
 	const dispatcher = new server.Dispatcher(opts, router)
@@ -205,7 +206,6 @@ export async function main(args: optparse.Args) {
 		log.error(err)
 		process.exit(1)
 	}
-	log.setProcessMode()
 	log.success(
 		`Protokit server is running in ${env} mode at ${terminal.underline(
 			`http://${host || 'localhost'}:${port}`

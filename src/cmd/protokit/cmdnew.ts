@@ -7,5 +7,5 @@ import * as optparse from 'govuk/optparse'
 export const INFO = 'create a new prototype path/journey'
 
 export async function main(args: optparse.Args) {
-	log.info('>>', 'Running new')
+	log.success('Running new')
 }

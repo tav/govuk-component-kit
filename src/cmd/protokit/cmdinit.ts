@@ -7,5 +7,5 @@ import * as optparse from 'govuk/optparse'
 export const INFO = 'create an empty protokit repo'
 
 export async function main(args: optparse.Args) {
-	log.info('>>', 'Running init')
+	log.success('Running init')
 }
