@@ -15,7 +15,8 @@
 		"AUTHORS.md",
 		"UNLICENSE.md",
 		"bin/",
-		"dist/"
+		"dist/",
+		"sample/"
 	],
 	"homepage": "https://github.com/tav/govuk-component-kit",
 	"keywords": [
@@ -34,5 +35,5 @@
 		"prepare": "rm -rf ./dist && tsc",
 		"watch": "tsc --watch"
 	},
-	"version": "0.0.8"
+	"version": "0.0.7"
 }
