@@ -14,7 +14,7 @@
 //   https://github.com/Microsoft/TypeScript/issues/18838 as a WONTFIX.
 
 const proc = require('child_process')
-const os = require('govuk/os')
+const fs = require('fs')
 const path = require('path')
 
 const indicator = ' \u001b[91merror\u001b[0m'
@@ -22,8 +22,12 @@ const repo = path.dirname(__dirname)
 const local = path.join(repo, 'node_modules', 'typescript', 'bin', 'tsc')
 
 let bin = 'tsc'
-if (os.isFile(local)) {
-	bin = local
+try {
+	if (fs.statSync(local).isFile()) {
+		bin = local
+	}
+} catch (err) {
+	// Ignore the error
 }
 
 const tsc = proc.spawn(bin, process.argv.slice(2), {cwd: repo})
