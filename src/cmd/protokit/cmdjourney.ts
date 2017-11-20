@@ -4,8 +4,8 @@
 import * as log from 'govuk/log'
 import * as optparse from 'govuk/optparse'
 
-export const INFO = 'initialise a fresh protokit repo'
+export const INFO = 'record a journey for user testing'
 
 export async function main(args: optparse.Args) {
-	log.success('Running init')
+	log.success('Running journey ...')
 }

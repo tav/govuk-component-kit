@@ -3,22 +3,28 @@
 
 import * as banner from 'govuk/cmd/protokit/banner'
 import * as cmdinit from 'govuk/cmd/protokit/cmdinit'
+import * as cmdjourney from 'govuk/cmd/protokit/cmdjourney'
 import * as cmdnew from 'govuk/cmd/protokit/cmdnew'
 import * as cmdrun from 'govuk/cmd/protokit/cmdrun'
+import * as cmdsnapshot from 'govuk/cmd/protokit/cmdsnapshot'
 import * as log from 'govuk/log'
 import * as optparse from 'govuk/optparse'
 import * as path from 'path'
 
 const COMMANDS: {[key: string]: (args: optparse.Args) => void} = {
 	init: cmdinit.main,
+	journey: cmdjourney.main,
 	new: cmdnew.main,
 	run: cmdrun.main,
+	snapshot: cmdsnapshot.main,
 }
 
 const INFO: {[key: string]: string} = {
 	init: cmdinit.INFO,
+	journey: cmdjourney.INFO,
 	new: cmdnew.INFO,
 	run: cmdrun.INFO,
+	snapshot: cmdsnapshot.INFO,
 }
 
 const FLAGS: {[key: string]: string} = {
@@ -51,7 +57,7 @@ function printUsage() {
 	console.log('Usage: protokit COMMAND [OPTIONS]\n')
 	console.log('Available commands:\n')
 	for (const cmd of Object.keys(COMMANDS).sort()) {
-		console.log(`      ${cmd}\t${INFO[cmd]}`)
+		console.log(`      ${cmd.padEnd(12)}${INFO[cmd]}`)
 	}
 	console.log('')
 }

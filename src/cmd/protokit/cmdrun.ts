@@ -2,6 +2,7 @@
 // See the Component Kit UNLICENSE file for details.
 
 import * as fs from 'fs'
+import * as common from 'govuk/cmd/protokit/common'
 import * as component from 'govuk/componentkit/component'
 import * as log from 'govuk/log'
 import * as optparse from 'govuk/optparse'
@@ -77,19 +78,6 @@ function getDefaultPort() {
 		return 9000
 	}
 	return port
-}
-
-function getProtokitRoot() {
-	let dir = process.cwd()
-	while (true) {
-		if (os.isDirectory(path.join(dir, '.protokit'))) {
-			return [dir, '']
-		}
-		if (dir === '/') {
-			return ['', 'protokit: you do not seem to be inside a protokit repo']
-		}
-		dir = path.dirname(dir)
-	}
 }
 
 function serveRoot(ctx: web.Context, mgr: component.Manager) {
@@ -192,7 +180,7 @@ export async function main(args: optparse.Args) {
 	const port = args.getNumber(getDefaultPort(), '-p', '--port')
 	const host = args.get('--host')
 	const env = args.includes('--prod') ? 'production' : 'dev'
-	let [root, err] = getProtokitRoot()
+	let [root, err] = common.getRoot()
 	if (err) {
 		log.error(err)
 		process.exit(1)
