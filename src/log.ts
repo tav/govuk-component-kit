@@ -4,7 +4,6 @@
 //! The log module provides logging support for configurable backends.
 
 import * as terminal from 'govuk/terminal'
-import * as util from 'util'
 
 let processMode = false
 
@@ -56,13 +55,7 @@ export function info(obj: string | any) {
 	if (processMode) {
 		console.log('')
 	}
-	let msg = ''
-	if (typeof obj === 'string') {
-		msg = obj
-	} else {
-		msg = JSON.stringify(obj, null, '\t')
-	}
-	console.log(terminal.blackBg(` ${'INFO'.padStart(10)} `), msg)
+	console.log(terminal.blackBg(` ${'INFO'.padStart(10)} `), obj)
 }
 
 // `request` logs the given message at the INFO level.
