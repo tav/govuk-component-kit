@@ -42,7 +42,7 @@ export function fileError(message: string, filename: string, trace: string[]) {
 	}
 	console.log(
 		terminal.redBg(` ${'ERROR'.padStart(10)} `),
-		terminal.yellow(`Syntax error in ${terminal.underline(filename)}`)
+		terminal.yellow(`Error in ${terminal.underline(filename)}`)
 	)
 	console.log('')
 	console.log(trace.map(line => `    ${line}`).join('\n'))
