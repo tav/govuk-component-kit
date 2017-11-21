@@ -5,11 +5,20 @@
 
 import * as fs from 'fs'
 import * as log from 'govuk/log'
+import * as strings from 'govuk/strings'
 import * as terminal from 'govuk/terminal'
 import {dict} from 'govuk/types'
 import * as path from 'path'
 import * as ts from 'typescript'
 import * as vm from 'vm'
+
+interface Code {
+	js: string
+	source: string
+	sourcemap: string
+}
+
+const INITIAL_IMPORTS = new Set(Object.keys(require.cache))
 
 const OPTS: ts.CompilerOptions = {
 	experimentalDecorators: true,
@@ -19,42 +28,64 @@ const OPTS: ts.CompilerOptions = {
 	target: ts.ScriptTarget.ESNext,
 }
 
-let ignoredImports: Set<string>
-let nodeInspector: ts.SourceFile
+const RECURSIVE_IMPORT = new Error('recursive import')
+
+let inspectorLib: ts.SourceFile
 let tsLib: ts.SourceFile
 
-function createModule(filename: string, source: string) {
-	const module = {exports: {}}
-	try {
-		const wrapper = vm.runInThisContext(
-			`(function(module, exports, require) {
-'use strict'
-${source}
-})`,
-			{filename, lineOffset: -2}
-		)
-		wrapper(module, module.exports, require)
-	} catch (err) {
-		if (err instanceof SyntaxError && err.stack) {
-			const lines = err.stack.split('\n')
-			const highlight = terminal.red(lines[2].replace(/\^/g, '~'))
-			const msg = lines[4].slice(13) // get rid of 'SyntaxError: '
-			log.fileError(msg, lines[0], [lines[1], highlight])
-		} else {
-			log.error(err)
+function buildModules(files: {[key: string]: Code}) {
+	wipeRequireCache()
+	let current = ''
+	const modules: {[key: string]: any} = {}
+	const seen = new Set()
+	const ckitRequire: any = (id: string) => {
+		if (id.startsWith('@ckit')) {
+			if (seen.has(id)) {
+				log.error(
+					`componentkit: recursive import of ${id} when creating the ${current} module`
+				)
+				throw RECURSIVE_IMPORT
+			}
+			let mod = modules[id]
+			if (mod) {
+				return mod
+			}
+			mod = createModule(id, files[id], ckitRequire)
+			modules[id] = mod
+			return mod
 		}
-		err.handled = true
-		throw err
+		return require(id)
 	}
+	ckitRequire.cache = require.cache
+	ckitRequire.extensions = require.extensions
+	ckitRequire.resolve = require.resolve
+	for (const [id, code] of Object.entries(files)) {
+		seen.clear()
+		seen.add(id)
+		if (!modules[id]) {
+			current = id
+			modules[id] = createModule(id, code, ckitRequire)
+		}
+	}
+	return modules
+}
+
+function createModule(filename: string, code: Code, require: any) {
+	const module = {exports: {}}
+	const wrapper = vm.runInThisContext(
+		`(function(module, exports, require) {
+${code.js}
+});`,
+		{filename}
+	)
+	wrapper(module, module.exports, require)
 	return module.exports
 }
 
 function genLocals() {
-	if (ignoredImports) {
+	if (tsLib) {
 		return
 	}
-
-	ignoredImports = new Set(Object.keys(require.cache))
 	const root = path.dirname(require.resolve('typescript'))
 	const node = path.join(path.dirname(path.dirname(root)), '@types', 'node')
 	const sources = [path.join(node, 'index.d.ts')].concat(
@@ -78,7 +109,7 @@ function genLocals() {
 		].map(filename => path.join(root, `lib.${filename}.d.ts`))
 	)
 
-	nodeInspector = ts.createSourceFile(
+	inspectorLib = ts.createSourceFile(
 		'inspector.d.ts',
 		fs.readFileSync(path.join(node, 'inspector.d.ts'), {encoding: 'utf8'}),
 		ts.ScriptTarget.ESNext
@@ -98,7 +129,7 @@ function genLocals() {
 
 function wipeRequireCache() {
 	for (const mod of Object.keys(require.cache)) {
-		if (!ignoredImports.has(mod)) {
+		if (!INITIAL_IMPORTS.has(mod)) {
 			delete require.cache[mod]
 		}
 	}
@@ -111,7 +142,7 @@ export function compile(sources: dict) {
 	const diagnostics = ts
 		.getPreEmitDiagnostics(prog)
 		.concat(prog.emit().diagnostics)
-	const files = compiler.files
+	let errored = false
 	for (const diagnostic of diagnostics) {
 		if (diagnostic.file) {
 			const {line, character} = diagnostic.file.getLineAndCharacterOfPosition(
@@ -122,39 +153,49 @@ export function compile(sources: dict) {
 				'\n'
 			)
 			const filename = diagnostic.file.fileName
-			const trace: string[] = []
 			if (filename.startsWith('@ckit')) {
 				// TODO(tav): Handle internal mapping to component source files
 			}
 			const source = diagnostic.file.text
 			const sourceLine = source.split('\n')[line]
-			const ctxLine = `${' '.repeat(character)}${terminal.red(
+			let tabCount = strings.count(sourceLine, '\t')
+			let prefix = ''
+			if (tabCount) {
+				// TODO(tav): The tabs may not line up if interleaved with other characters.
+				if (tabCount > character) {
+					tabCount = character
+				}
+				prefix = '\t'.repeat(tabCount) + ' '.repeat(character - tabCount)
+			} else {
+				prefix = ' '.repeat(character)
+			}
+			const ctxLine = `${prefix}${terminal.red(
 				'~'.repeat(diagnostic.length || 1)
 			)}`
-			trace.push(sourceLine)
-			trace.push(ctxLine)
+			const trace = [sourceLine, ctxLine]
+			errored = true
 			log.fileError(message, `${filename}:${line + 1}:${character + 1}`, trace)
-			// console.log([diagnostic.start, diagnostic.length])
-			// console.log(
-			// 	FOO.slice(diagnostic.start, diagnostic.start! + diagnostic.length!)
-			// )
 		}
+	}
+	if (errored) {
+		return
+	}
+	try {
+		return buildModules(compiler.files)
+	} catch (err) {
+		if (err !== RECURSIVE_IMPORT) {
+			log.error(err)
+		}
+		err.handled = true
+		throw err
 	}
 }
 
 class Compiler {
-	files: {
-		[key: string]: {
-			js: string
-			source: string
-			sourcemap: string
-		}
-	} = {}
+	files: {[key: string]: Code} = {}
 
 	constructor(private sources: dict) {
-		for (let [path, source] of Object.entries(sources)) {
-			// Replace the .ts extension
-			path = path.slice(0, path.length - 3) + '.js'
+		for (const [path, source] of Object.entries(sources)) {
 			this.files[path] = {js: '', source, sourcemap: ''}
 		}
 	}
@@ -192,15 +233,17 @@ class Compiler {
 	}
 
 	getSourceFile(path: string, langVersion: ts.ScriptTarget) {
-		const source = this.sources[path]
-		if (source) {
-			return ts.createSourceFile(path, source, langVersion)
+		if (path.endsWith('.ts')) {
+			const source = this.sources[path.slice(0, path.length - 3)]
+			if (source) {
+				return ts.createSourceFile(path, source, langVersion)
+			}
 		}
 		if (path === 'lib.d.ts') {
 			return tsLib
 		}
 		if (path === 'inspector.d.ts') {
-			return nodeInspector
+			return inspectorLib
 		}
 		if (this.fileExists(path)) {
 			return ts.createSourceFile(
@@ -236,10 +279,11 @@ class Compiler {
 	}
 
 	writeFile(path: string, data: string) {
-		if (path.endsWith('.map')) {
-			path = path.slice(0, path.length - 4)
+		if (path.endsWith('.js.map')) {
+			path = path.slice(0, path.length - 7)
 			this.files[path].sourcemap = data
 		} else {
+			path = path.slice(0, path.length - 3)
 			this.files[path].js = data
 		}
 	}
