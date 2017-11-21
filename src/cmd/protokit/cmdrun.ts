@@ -44,19 +44,19 @@ function createRouter(root: string) {
 		if (args[0] === 'static') {
 			return serveStatic(ctx, mgr, args.slice(1))
 		}
-		let pageRenderer
+		let page
 		try {
-			pageRenderer = mgr.getPageRenderer(args)
+			page = mgr.getPage(args)
 		} catch (err) {
 			log.error(err)
 			return 500
 		}
-		if (!pageRenderer) {
+		if (!page) {
 			return 404
 		}
 		let resp
 		try {
-			resp = pageRenderer(ctx, mgr)
+			resp = page.render(ctx, mgr)
 		} catch (err) {
 			log.error(err)
 			return 500
@@ -86,7 +86,7 @@ function serveRoot(ctx: web.Context, mgr: component.Manager) {
 	const module = {exports: {Org: '', Title: ''}}
 	new Function('module', 'exports', cfgFile)(module, module.exports)
 	const cfg = module.exports
-	const versions = mgr.getVersionInfos()
+	const versions = mgr.versions || []
 	let versionsInfo
 	if (versions.length) {
 		versionsInfo = `<div class="versions">${versions
@@ -180,16 +180,12 @@ export async function main(args: optparse.Args) {
 	const port = args.getNumber(getDefaultPort(), '-p', '--port')
 	const host = args.get('--host')
 	const env = args.includes('--prod') ? 'production' : 'dev'
-	let [root, err] = common.getRoot()
-	if (err) {
-		log.error(err)
-		process.exit(1)
-	}
+	const root = common.getRootOrExit()
 	log.setProcessMode()
 	const router = createRouter(root)
 	const opts = {env, staticBase: '/static/'}
 	const dispatcher = new server.Dispatcher(opts, router)
-	err = await dispatcher.run(port, host)
+	const err = await dispatcher.run(port, host)
 	if (err) {
 		log.error(err)
 		process.exit(1)
