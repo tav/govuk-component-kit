@@ -5,12 +5,14 @@
 
 import * as terminal from 'govuk/terminal'
 
-let processMode = false
+let logged = false
 
 // `error` logs the given message at the ERROR level.
 export function error(message: string | Error) {
-	if (processMode) {
+	if (logged) {
 		console.log('')
+	} else {
+		logged = true
 	}
 	if (message instanceof Error) {
 		console.error(
@@ -37,8 +39,10 @@ export function error(message: string | Error) {
 }
 
 export function fileError(message: string, filename: string, trace: string[]) {
-	if (processMode) {
+	if (logged) {
 		console.log('')
+	} else {
+		logged = true
 	}
 	console.log(
 		terminal.redBg(` ${'ERROR'.padStart(10)} `),
@@ -52,16 +56,20 @@ export function fileError(message: string, filename: string, trace: string[]) {
 
 // `info` logs the given object/message at the INFO level.
 export function info(obj: string | any) {
-	if (processMode) {
+	if (logged) {
 		console.log('')
+	} else {
+		logged = true
 	}
-	console.log(terminal.blackBg(` ${'INFO'.padStart(10)} `), obj)
+	console.log(terminal.whiteBg(terminal.black(` ${'INFO'.padStart(10)} `)), obj)
 }
 
 // `request` logs the given message at the INFO level.
 export function request(method: string, message: string) {
-	if (processMode) {
+	if (logged) {
 		console.log('')
+	} else {
+		logged = true
 	}
 	console.log(
 		terminal.whiteBg(terminal.black(` ${method.padStart(10)} `)),
@@ -69,16 +77,12 @@ export function request(method: string, message: string) {
 	)
 }
 
-// `setProcessMode` enables process mode logging with an additional line break
-// between each log message.
-export function setProcessMode() {
-	processMode = true
-}
-
 // `success` logs the given message at the INFO level.
 export function success(message: string) {
-	if (processMode) {
+	if (logged) {
 		console.log('')
+	} else {
+		logged = true
 	}
 	console.log(terminal.greenBg(` ${'SUCCESS'.padStart(10)} `), message)
 }
