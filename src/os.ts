@@ -2,6 +2,9 @@
 // See the Component Kit UNLICENSE file for details.
 
 import * as fs from 'fs'
+import * as io from 'govuk/io'
+import * as log from 'govuk/log'
+import * as os from 'os'
 import * as path from 'path'
 
 function* walkFrom(
@@ -47,4 +50,23 @@ export function* walk(dir: string) {
 		strip += 1
 	}
 	yield* walkFrom(dir, strip)
+}
+
+export function watch(dir: string, cb: () => void, throttle = 1000) {
+	const platform = os.platform()
+	if (platform === 'darwin' || platform === 'win32') {
+		fs.watch(dir, {recursive: true}, io.throttle(cb, throttle))
+		return
+	}
+	new Watcher(dir, io.throttle(cb, throttle)).run()
+	log.error(
+		`Sorry, watching directories is not yet implemented for ${platform}`
+	)
+	process.exit(1)
+}
+
+class Watcher {
+	constructor(root: string, cb: () => void) {}
+
+	run() {}
 }
