@@ -1,6 +1,8 @@
 // Public Domain (-) 2017-present The Component Kit Authors.
 // See the Component Kit UNLICENSE file for details.
 
+const APOSTROPHE = 39
+
 export function count(str: string, char: string) {
 	let total = 0
 	let pos = str.indexOf(char)
@@ -23,7 +25,7 @@ export function slugify(title: string) {
 				hyphen = false
 			}
 			out.push(char)
-		} else {
+		} else if (code !== APOSTROPHE) {
 			hyphen = true
 		}
 	}
