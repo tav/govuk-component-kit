@@ -3,11 +3,16 @@
 
 //! The terminal module provides support functionality for writing to stdout.
 
+import * as iter from 'govuk/iter'
+
 // `SUPPORTS_COLOR` indicates whether the output is likely to display color,
 // i.e. if the current process is being run within a text terminal (TTY) context
 // in a terminal emulator that supports 256 colors.
 export const SUPPORTS_COLOR =
 	Boolean(process.stdout.isTTY) && /-256(color)?$/i.test(process.env.TERM || '')
+
+let cursorHidden = true
+let restoreCursorRegistered = false
 
 export function black(text: string) {
 	return SUPPORTS_COLOR ? `\u001b[30m${text}\u001b[0m` : text
@@ -39,6 +44,20 @@ export function blueBold(text: string) {
 
 export function blueBoldBg(text: string) {
 	return SUPPORTS_COLOR ? `\u001b[104;1m${text}\u001b[0m` : text
+}
+
+export function clearLine() {
+	process.stdout.write('\r\u001b[2K')
+}
+
+export function clearLines(n: number) {
+	for (const _ of iter.range(n)) {
+		process.stdout.write('\u001b[1A\r\u001b[2K')
+	}
+}
+
+export function cursorUp() {
+	process.stdout.write('\u001b[1A')
 }
 
 export function cyan(text: string) {
@@ -77,6 +96,19 @@ export function grey(text: string) {
 	return SUPPORTS_COLOR ? `\u001b[90m${text}\u001b[0m` : text
 }
 
+export function hideCursor() {
+	process.stdout.write('\u001b[?25l')
+	cursorHidden = true
+	if (!restoreCursorRegistered) {
+		process.on('exit', () => {
+			if (cursorHidden) {
+				process.stdout.write('\u001b[?25h')
+			}
+		})
+		restoreCursorRegistered = true
+	}
+}
+
 export function magenta(text: string) {
 	return SUPPORTS_COLOR ? `\u001b[35m${text}\u001b[0m` : text
 }
@@ -107,6 +139,11 @@ export function redBold(text: string) {
 
 export function redBoldBg(text: string) {
 	return SUPPORTS_COLOR ? `\u001b[101;1m${text}\u001b[0m` : text
+}
+
+export function showCursor() {
+	process.stdout.write('\u001b[?25h')
+	cursorHidden = false
 }
 
 export function underline(text: string) {
