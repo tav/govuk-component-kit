@@ -2,8 +2,8 @@
 // See the Component Kit UNLICENSE file for details.
 
 import * as banner from 'govuk/cmd/protokit/banner'
+import * as cmdgroup from 'govuk/cmd/protokit/cmdgroup'
 import * as cmdinit from 'govuk/cmd/protokit/cmdinit'
-import * as cmdjourney from 'govuk/cmd/protokit/cmdjourney'
 import * as cmdnew from 'govuk/cmd/protokit/cmdnew'
 import * as cmdrun from 'govuk/cmd/protokit/cmdrun'
 import * as cmdsnapshot from 'govuk/cmd/protokit/cmdsnapshot'
@@ -12,16 +12,16 @@ import * as optparse from 'govuk/optparse'
 import * as path from 'path'
 
 const COMMANDS: {[key: string]: (args: optparse.Args) => void} = {
+	group: cmdgroup.main,
 	init: cmdinit.main,
-	journey: cmdjourney.main,
 	new: cmdnew.main,
 	run: cmdrun.main,
 	snapshot: cmdsnapshot.main,
 }
 
 const INFO: {[key: string]: string} = {
+	group: cmdgroup.INFO,
 	init: cmdinit.INFO,
-	journey: cmdjourney.INFO,
 	new: cmdnew.INFO,
 	run: cmdrun.INFO,
 	snapshot: cmdsnapshot.INFO,
@@ -44,7 +44,7 @@ function cmdhelp(args: string[]) {
 	}
 	const flags = FLAGS[cmd]
 	console.log(banner.LOGO)
-	console.log(`Usage: protokit ${cmd}${flags ? ' [flags]' : ''}\n`)
+	console.log(`Usage: protokit ${cmd}${flags ? ' [OPTIONS]' : ''}\n`)
 	if (flags) {
 		console.log('Options:')
 		console.log(flags)
