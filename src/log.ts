@@ -8,22 +8,28 @@ import * as terminal from 'govuk/terminal'
 let logged = false
 
 // `error` logs the given message at the ERROR level.
-export function error(message: string | Error) {
+export function error(message: string | Error, err?: Error) {
 	if (logged) {
 		console.log('')
 	} else {
 		logged = true
 	}
 	if (message instanceof Error) {
+		err = message
+		message = message.toString()
+	} else if (err) {
+		message = `${message}: ${err.toString()}`
+	}
+	if (err) {
 		console.error(
 			terminal.redBg(` ${'ERROR'.padStart(10)} `),
-			terminal.yellow(message.toString())
+			terminal.yellow(message)
 		)
-		if (message.stack) {
+		if (err.stack) {
 			console.log('')
 			console.log(
 				terminal.blue(
-					message.stack
+					err.stack
 						.split('\n')
 						.slice(1)
 						.join('\n')
@@ -86,3 +92,14 @@ export function success(message: string) {
 	}
 	console.log(terminal.greenBg(` ${'SUCCESS'.padStart(10)} `), message)
 }
+
+// Set default handlers for unhandled errors.
+process.on('uncaughtException', err => {
+	error('Uncaught exception', err)
+	process.exit(1)
+})
+
+process.on('unhandledRejection', err => {
+	error('Unhandled promise rejection', err)
+	process.exit(1)
+})
