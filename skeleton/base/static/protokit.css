@@ -1,0 +1,92 @@
+html {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	font-family: 'HelveticaNeue', 'Helvetica Neue', 'Arial';
+	font-size: 18px;
+	margin: 0;
+	padding: 0;
+}
+
+header {
+	background: #0b0c0c;
+	color: #fff;
+}
+
+h1 {
+	font-size: 48px;
+	margin-bottom: 40px;
+}
+
+h2 {
+	border-bottom: 4px solid rgb(43, 140, 196);
+	font-size: 48px;
+	font-weight: 300;
+	margin-bottom: 20px;
+	margin-top: 60px;
+}
+
+hr {
+	clear: both;
+	width: 0;
+	height: 0;
+	line-height: 0;
+}
+
+.center {
+	text-align: center;
+}
+
+.header-wrapper {
+	margin: 0 auto;
+	max-width: 965px;
+	padding: 12px 15px;
+}
+
+.header-wrapper img {
+	width: 36px;
+	height: 32px;
+	margin: 0 6px 0 0;
+	vertical-align: top;
+}
+
+.header-wrapper strong {
+	font-size: 30px;
+	line-height: 35px;
+}
+
+.main {
+	margin: 0 auto;
+	max-width: 965px;
+	padding: 8px 15px;
+}
+
+.version-info {
+	border-bottom: 1px dotted #ccc;
+	padding: 24px 0 12px 0;
+}
+
+.versions {
+	max-width: 800px;
+}
+
+.versions a {
+	color: #2578a8;
+}
+
+.versions a:hover {
+	color: #2b8cc4;
+}
+
+.versions .version {
+	float: left;
+	width: 70%;
+}
+
+.versions .date {
+	float: left;
+	width: 10%;
+	color: #6f777b;
+}
