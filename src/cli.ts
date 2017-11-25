@@ -34,17 +34,17 @@ export class Interface {
 		console.log(terminal.yellow(`    ⚠️   ${msg}  ⚠️`))
 	}
 
-	question(text: string, validator?: Validator, fallback?: string) {
+	question(text: string, val?: Validator, fallback?: string): Promise<string> {
 		this.fallback = fallback
 		this.text = text
-		this.validator = validator
+		this.validator = val
 		return new Promise(resolve => {
 			this.resolve = resolve
 			this.renderQuestion()
 		})
 	}
 
-	select(text: string, options: Array<[string, string]>) {
+	select(text: string, options: Array<[string, string]>): Promise<string> {
 		this.options = options
 		this.selected = 0
 		this.showingHint = false
@@ -68,6 +68,11 @@ export class Interface {
 		if (key.name === 'return') {
 			this.resolve!(this.options![this.selected][1])
 			process.stdin.removeListener('keypress', this.handleKeys)
+			if (this.showingHint) {
+				terminal.clearLines(4)
+			} else {
+				terminal.clearLines(1)
+			}
 			terminal.showCursor()
 			return
 		}
