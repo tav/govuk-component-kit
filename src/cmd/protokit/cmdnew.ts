@@ -2,17 +2,20 @@
 // See the Component Kit UNLICENSE file for details.
 
 import * as fs from 'fs'
+import * as cli from 'govuk/cli'
 import * as common from 'govuk/cmd/protokit/common'
+import * as log from 'govuk/log'
 import * as optparse from 'govuk/optparse'
 import * as os from 'govuk/os'
 import * as strings from 'govuk/strings'
 import * as terminal from 'govuk/terminal'
 import * as path from 'path'
-import * as readline from 'readline'
 
 export const INFO = 'create a new prototype version'
 
-function createVersion(title: string, dir: string, startURL: string) {
+function createVersion(root: string, title: string) {
+	const id = strings.slugify(title)
+	const dir = path.join(root, id)
 	fs.mkdirSync(dir)
 	fs.mkdirSync(path.join(dir, 'components'))
 	fs.mkdirSync(path.join(dir, 'fields'))
@@ -24,79 +27,47 @@ function createVersion(title: string, dir: string, startURL: string) {
 		path.join(dir, 'version.ts'),
 		`export const Title = ${JSON.stringify(title)}
 
-export const StartURL = ${JSON.stringify(startURL)}
+export const StartURL = '/'
 
 export const Created = ${Date.now()}
+
+export const Changes = []
 `,
 		{encoding: 'utf8'}
 	)
-}
-
-function logError(msg: string) {
-	console.log('')
-	console.log(terminal.yellow(`    ⚠️   ${msg}  ⚠️`))
-}
-
-function logProgress(msg: string) {
-	console.log('')
-	console.log(terminal.green(`    ✔  ${msg}`))
+	return id
 }
 
 export async function main(args: optparse.Args) {
 	const root = common.getRootOrExit()
-	const rl = readline.createInterface({
-		input: process.stdin,
-		output: process.stdout,
-	})
-	rl.setPrompt('')
-	let dir = ''
-	let version = ''
-	const titleError = (msg: string) => {
-		logError(msg)
-		getTitle()
+	const groups = common.getGroups(root)
+	if (!groups.length) {
+		log.error('Please create a group by running `protokit group`')
+		process.exit(1)
 	}
-	const getStart = () => {
-		console.log('')
-		rl.question(
-			terminal.blue('    ❯ What do you want the start URL path to be?  '),
-			startURL => {
-				startURL = startURL.trim()
-				if (!startURL) {
-					startURL = '/'
-				}
-				createVersion(version, dir, startURL)
-				logProgress(`Created ${dir}`)
-				console.log('')
-				rl.close()
+	const app = new cli.Interface()
+	const group = await app.select(
+		'What group is this prototype part of?',
+		groups
+	)
+	const title = await app.question(
+		'What is the title of your new prototype?',
+		text => {
+			const id = strings.slugify(text)
+			if (!id) {
+				return 'Please enter a title with at least one alphanumeric character'
 			}
-		)
-	}
-	const getTitle = () => {
-		console.log('')
-		rl.question(
-			terminal.blue('    ❯ What is the title of your new prototype?  '),
-			title => {
-				title = title.trim()
-				if (!title) {
-					getTitle()
-					return
-				}
-				const id = strings.slugify(title)
-				if (!id) {
-					titleError(
-						'Please enter a title with at least one alphanumeric character'
-					)
-					return
-				}
-				dir = path.join(root, id)
-				if (os.isDirectory(dir)) {
-					titleError(`A directory already exists for ${id}`)
-					return
-				}
-				version = title
-				getStart()
+			const dir = path.join(root, group, id)
+			if (os.isDirectory(dir)) {
+				return `A directory already exists for ${group}/${id}`
 			}
-		)
-	}
-	getTitle()
+			return true
+		}
+	)
+	const dir = path.join(root, group)
+	app.success(
+		`Created ${terminal.underline(`${group}/${createVersion(dir, title)}`)}`
+	)
+	app.close()
+	console.log('')
 }
