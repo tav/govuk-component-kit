@@ -5,9 +5,8 @@
 
 import * as fs from 'fs'
 import * as log from 'govuk/log'
-import * as strings from 'govuk/strings'
-import * as terminal from 'govuk/terminal'
 import {dict} from 'govuk/types'
+import * as typescript from 'govuk/typescript'
 import * as path from 'path'
 import * as ts from 'typescript'
 import * as vm from 'vm'
@@ -142,42 +141,7 @@ export function compile(sources: dict) {
 	const diagnostics = ts
 		.getPreEmitDiagnostics(prog)
 		.concat(prog.emit().diagnostics)
-	let errored = false
-	for (const diagnostic of diagnostics) {
-		if (diagnostic.file) {
-			const {line, character} = diagnostic.file.getLineAndCharacterOfPosition(
-				diagnostic.start!
-			)
-			const message = ts.flattenDiagnosticMessageText(
-				diagnostic.messageText,
-				'\n'
-			)
-			const filename = diagnostic.file.fileName
-			if (filename.startsWith('@ckit')) {
-				// TODO(tav): Handle internal mapping to component source files
-			}
-			const source = diagnostic.file.text
-			const sourceLine = source.split('\n')[line]
-			let tabCount = strings.count(sourceLine, '\t')
-			let prefix = ''
-			if (tabCount) {
-				// TODO(tav): The tabs may not line up if interleaved with other characters.
-				if (tabCount > character) {
-					tabCount = character
-				}
-				prefix = '\t'.repeat(tabCount) + ' '.repeat(character - tabCount)
-			} else {
-				prefix = ' '.repeat(character)
-			}
-			const ctxLine = `${prefix}${terminal.red(
-				'~'.repeat(diagnostic.length || 1)
-			)}`
-			const trace = [sourceLine, ctxLine]
-			errored = true
-			log.fileError(message, `${filename}:${line + 1}:${character + 1}`, trace)
-		}
-	}
-	if (errored) {
+	if (typescript.reportErrors(diagnostics)) {
 		return
 	}
 	try {
