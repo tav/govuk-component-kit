@@ -4,36 +4,27 @@
 		"protokit": "./bin/protokit"
 	},
 	"dependencies": {
-		"@types/node": "8.0.50",
+		"@types/node": "8.0.53",
 		"typescript": "2.6.1"
 	},
 	"description": "Component Kit for creating GOV.UK frontend services",
 	"devDependencies": {
-		"tslint": "^5.8.0"
+		"tslint": "5.8.0"
 	},
-	"files": [
-		"AUTHORS.md",
-		"UNLICENSE.md",
-		"bin/",
-		"dist/",
-		"sample/"
-	],
+	"files": ["AUTHORS.md", "UNLICENSE.md", "bin/", "dist/", "skeleton/"],
 	"homepage": "https://github.com/tav/govuk-component-kit",
-	"keywords": [
-		"govuk",
-		"frontend"
-	],
+	"keywords": ["govuk", "frontend"],
 	"license": "SEE LICENSE IN UNLICENSE.md",
-	"main": "node_modules/componentkit/index.js",
+	"main": "node_modules/govuk/componentkit/index.js",
 	"name": "componentkit",
 	"repository": "https://github.com/tav/govuk-component-kit",
 	"scripts": {
-		"build": "tsc",
+		"build": "./bin/tsc",
 		"clean": "rm -rf ./dist",
 		"lint": "tslint --project tsconfig.json",
 		"postinstall": "ln -s ../dist node_modules/govuk",
-		"prepare": "rm -rf ./dist && tsc",
-		"watch": "tsc --watch"
+		"prepare": "rm -rf ./dist && ./bin/tsc",
+		"watch": "./bin/tsc --watch"
 	},
 	"version": "0.0.7"
 }
