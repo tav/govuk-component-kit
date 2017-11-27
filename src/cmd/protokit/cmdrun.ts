@@ -43,7 +43,7 @@ function createRouter(root: string) {
 			return serveStatic(ctx, mgr, args.slice(1))
 		}
 		try {
-			return mgr.renderPage(ctx, args)
+			return mgr.renderPath(ctx, args)
 		} catch (err) {
 			log.error(err)
 			return 500
@@ -63,11 +63,11 @@ function serveStatic(ctx: web.Context, mgr: protokit.Manager, args: string[]) {
 	if (args.length < 3) {
 		return 404
 	}
-	const group = args[0]
-	const version = args[1]
+	const groupID = args[0]
+	const versionID = args[1]
 	args = args.slice(2)
 	if (args[2] === 'components.css') {
-		const resp = mgr.getCSS(group, version)
+		const resp = mgr.getStyleSheet(groupID, versionID)
 		if (resp === undefined) {
 			return 404
 		}
@@ -75,13 +75,13 @@ function serveStatic(ctx: web.Context, mgr: protokit.Manager, args: string[]) {
 		return resp
 	}
 	let filepath
-	if (group === 'base') {
+	if (groupID === 'base') {
 		filepath = path.join(mgr.root, 'base', 'static', ...args)
 	} else {
-		filepath = path.join(mgr.root, group, version, 'static', ...args)
+		filepath = path.join(mgr.root, groupID, versionID, 'static', ...args)
 	}
 	if (!os.isFile(filepath)) {
-		if (group === 'base') {
+		if (groupID === 'base') {
 			return 404
 		}
 		filepath = path.join(mgr.root, 'base', 'static', ...args)
