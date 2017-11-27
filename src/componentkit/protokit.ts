@@ -1,9 +1,8 @@
 // Public Domain (-) 2017-present The Component Kit Authors.
 // See the Component Kit UNLICENSE file for details.
 
-//! The component module implements the core component manager.
+//! The protokit module implements a component manager for Protokit.
 
-import * as fs from 'fs'
 import * as code from 'govuk/componentkit/code'
 import * as log from 'govuk/log'
 import * as os from 'govuk/os'
@@ -11,47 +10,83 @@ import {dict} from 'govuk/types'
 import * as web from 'govuk/web'
 import * as path from 'path'
 
+export interface ErrorPage {
+	render(ctx: web.Context, error: Error): string
+}
+
+export interface GroupInfo {
+	Description: string
+	GroupID: string
+	Title: string
+}
+
+export interface GroupPage {
+	render(ctx: web.Context, group: string, versions: VersionInfo[]): string
+}
+
+export interface SitePage {
+	render(ctx: web.Context, groups: GroupInfo[]): string
+}
+
 export interface Page {
-	render(ctx: web.Context, mgr: Manager): string
+	render(ctx: web.Context): string
 }
 
 export interface VersionInfo {
+	Changes: string[]
 	Created: number
 	StartURL: string
 	Title: string
 	VersionID: string
 }
 
-interface VersionedData {
-	[key: string]: {
-		components: {
-			[key: string]: {
-				css: string
-				html: string
-				ts: string
-			}
+interface VersionFiles {
+	components: {
+		[key: string]: {
+			css?: string
+			html?: string
+			ts?: string
 		}
-		info?: string
-		fields: {
-			[key: string]: string
+	}
+	info: string
+	fields: {
+		[key: string]: string
+	}
+	pages: {
+		[key: string]: {
+			html?: string
+			ts?: string
 		}
-		pages: {
-			[key: string]: {
-				html: string
-				ts: string
-			}
-		}
+	}
+	protokit: {
+		group?: string
+		site?: string
+	}
+	text: {
+		[key: string]: string
+	}
+	variables: {
+		css?: string
+		components?: string
+		pages?: string
 	}
 }
 
 const ALPHA_NUMERIC = /^[A-Za-z0-9]*$/
 const ALPHA_UPPER = /^[A-Z]/
 const FIELD_IDENT = /^[a-z]*\.[A-Za-z0-9]*$/
-// const MESSAGE_IDENT = /^[A-Z][A-Z_]*[a-z]*$/
+const MESSAGE_IDENT = /^[A-Z][A-Z_]*(_[a-z][a-z])?$/
 const URL_IDENT = /^[\/A-Za-z0-9-]*$/
 const VERSION_IDENT = /^[A-Za-z0-9-]*$/
 
-const VALID_METATYPES = new Set(['components', 'fields', 'messages', 'pages'])
+const VALID_METATYPES = new Set([
+	'components',
+	'fields',
+	'pages',
+	'protokit',
+	'text',
+	'variables',
+])
 
 function splitFilename(filename: string) {
 	const idx = filename.lastIndexOf('.')
@@ -61,32 +96,25 @@ function splitFilename(filename: string) {
 	return [filename.slice(0, idx), filename.slice(idx + 1)]
 }
 
-function throttle(func: any, wait: number) {
-	let timerID: NodeJS.Timer | undefined
-	return () => {
-		if (timerID) {
-			clearTimeout(timerID)
-		}
-		timerID = setTimeout(() => {
-			timerID = undefined
-			func()
-		}, wait)
-	}
-}
+function merge() {}
 
 export class Manager {
 	id = 0
 	pages: {[key: string]: {[key: string]: Page}} = {}
-	stylesheets: dict = {}
+	stylesheets: {[key: string]: dict} = {}
 	versions: VersionInfo[] = []
 
 	constructor(public root: string) {
 		this.compile(true)
-		fs.watch(root, {recursive: true}, throttle(this.compile.bind(this), 1000))
+		os.watch(root, this.compile.bind(this))
 	}
 
-	getCSS(version: string) {
-		return this.stylesheets[version] || ''
+	getCSS(group: string, version: string) {
+		const versions = this.stylesheets[group]
+		if (!versions) {
+			return
+		}
+		return versions[version]
 	}
 
 	getPage(args: string[]): Page | undefined {
@@ -96,6 +124,10 @@ export class Manager {
 			return
 		}
 		return pages['/' + urlsegments.join('/')]
+	}
+
+	renderPage(ctx: web.Context, args: string[]) {
+		return 404
 	}
 
 	private compile(firstTime?: boolean) {
