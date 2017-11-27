@@ -1,0 +1,39 @@
+<!doctype html>
+<meta charset=utf-8>
+<link rel="stylesheet" href="/static/base/protokit.css">
+<title>{{Title}}</title>
+
+<body>
+    <header>
+        <div class="header-wrapper">
+            <img src="/static/base/crown.png">
+            <strong>{{site.Org}}</strong>
+        </div>
+    </header>
+    <div class="main">
+        <h1>{{Title}}</h1>
+        <p>These are the {{Title}} prototypes for {{site.Org}}.</p>
+        <p>
+            <strong>Newest on top.</strong>
+        </p>
+        <h2>Current versions</h2>
+        {{#if versions.length}}
+            <div class="versions">
+                {{#for version in versions}}
+                    <div class="version-info">
+                        <div class="version">
+                            <a href="/{{group}}/{{version.ID}}{{version.StartURL}}">{{version.Title}}</a>
+                        </div>
+                        <div class="date">{{new Date(version.Created).toISOString().slice(0, 10).replace(/-/g, '/')}}</div>
+                        <hr>
+                    </div>
+                {{/for}}
+            </div>
+        {{else}}
+            <p>Welcome. Create a new prototype version by running:</p>
+            <blockquote>
+                <code>protokit new</code>
+            </blockquote>
+        {{/if}}
+    </div>
+</body>

@@ -1,0 +1,35 @@
+<!doctype html>
+<meta charset=utf-8>
+<link rel="stylesheet" href="/static/base/protokit.css">
+<title>{{Title}}</title>
+
+<body>
+    <header>
+        <div class="header-wrapper">
+            <img src="/static/base/crown.png">
+            <strong>{{Org}}</strong>
+        </div>
+    </header>
+    <div class="main">
+        <h1>{{Title}}</h1>
+        <p>These are the prototypes for {{Org}}.</p>
+        <h2>Active groups</h2>
+        {{#if groups.length}}
+            <div class="groups">
+                {{#for group in groups}}
+                    <div class="group-info">
+                        <div class="group">
+                            <a href="/{{group.ID}}">{{group.Title}}</a>
+                        </div>
+                        <hr>
+                    </div>
+                {{/for}}
+            </div>
+        {{else}}
+            <p>Welcome. Create a new prototype group by running:</p>
+            <blockquote>
+                <code>protokit group</code>
+            </blockquote>
+        {{/if}}
+    </div>
+</body>
