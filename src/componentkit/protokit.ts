@@ -3,6 +3,7 @@
 
 //! The protokit module implements a component manager for Protokit.
 
+import * as fs from 'fs'
 import * as code from 'govuk/componentkit/code'
 import * as log from 'govuk/log'
 import * as os from 'govuk/os'
@@ -10,37 +11,7 @@ import {dict} from 'govuk/types'
 import * as web from 'govuk/web'
 import * as path from 'path'
 
-export interface ErrorPage {
-	render(ctx: web.Context, error: Error): string
-}
-
-export interface GroupInfo {
-	Description: string
-	GroupID: string
-	Title: string
-}
-
-export interface GroupPage {
-	render(ctx: web.Context, group: string, versions: VersionInfo[]): string
-}
-
-export interface SitePage {
-	render(ctx: web.Context, groups: GroupInfo[]): string
-}
-
-export interface Page {
-	render(ctx: web.Context): string
-}
-
-export interface VersionInfo {
-	Changes: string[]
-	Created: number
-	StartURL: string
-	Title: string
-	VersionID: string
-}
-
-interface VersionFiles {
+export interface VersionFiles {
 	components: {
 		[key: string]: {
 			css?: string
@@ -68,8 +39,64 @@ interface VersionFiles {
 	variables: {
 		css?: string
 		components?: string
+		group?: string
 		pages?: string
+		site?: string
+		version?: string
 	}
+}
+
+export interface GroupData {
+	[key: string]: {
+		infopage: {
+			path: string
+			mod?: GroupInfoPage
+		}
+		versions: {
+			[key: string]: {
+				components: {
+					[key: string]: {
+						compiled: boolean
+						path: string
+					}
+				}
+				fields: {
+					mod: any
+					paths: dict
+				}
+				info?: VersionInfo
+				merged?: boolean
+				pages: {
+					[key: string]: Page
+				}
+				stylesheet?: string
+				text: boolean
+			}
+		}
+	}
+}
+
+export interface GroupInfoPage {
+	Description: string
+	ID: string
+	Title: string
+	render(ctx: web.Context, group: string, versions: VersionInfo[]): string
+}
+
+export interface Page {
+	render(ctx: web.Context): string
+}
+
+export interface SitePage {
+	render(ctx: web.Context, groups: GroupInfoPage[]): string
+}
+
+export interface VersionInfo {
+	Changes: string[]
+	Created: number
+	ID: string
+	StartURL: string
+	Title: string
 }
 
 const ALPHA_NUMERIC = /^[A-Za-z0-9]*$/
@@ -99,53 +126,61 @@ function splitFilename(filename: string) {
 function merge() {}
 
 export class Manager {
-	id = 0
-	pages: {[key: string]: {[key: string]: Page}} = {}
-	stylesheets: {[key: string]: dict} = {}
-	versions: VersionInfo[] = []
+	private filecache: dict = {}
+	private groups: GroupData = {}
+	private sitepage?: SitePage
 
 	constructor(public root: string) {
-		this.compile(true)
-		os.watch(root, this.compile.bind(this))
+		this.load(true)
+		os.watch(root, this.load.bind(this))
 	}
 
-	getCSS(group: string, version: string) {
-		const versions = this.stylesheets[group]
-		if (!versions) {
+	getStyleSheet(groupID: string, versionID: string) {
+		const group = this.groups[groupID]
+		if (!group) {
 			return
 		}
-		return versions[version]
-	}
-
-	getPage(args: string[]): Page | undefined {
-		const [version, ...urlsegments] = args
-		const pages = this.pages[version]
-		if (!pages) {
+		const version = group.versions[versionID]
+		if (!version) {
 			return
 		}
-		return pages['/' + urlsegments.join('/')]
-	}
-
-	renderPage(ctx: web.Context, args: string[]) {
-		return 404
-	}
-
-	private compile(firstTime?: boolean) {
-		this.id++
-		if (!firstTime) {
-			log.info('Changed detected. Rebuilding components ...')
+		if (version.stylesheet === undefined) {
+			version.stylesheet = this.compileStyleSheet(version)
 		}
+		return version.stylesheet
+	}
+
+	render(ctx: web.Context, args: string[]) {
+		let resp
 		try {
-			const data = this.load()
-			// Get rid of versions without a matching info.ts file.
-			for (const version of Object.keys(data)) {
-				if (version === 'base') {
+			resp = this.renderPath(ctx, args)
+		} catch (err) {
+			ctx.error = err
+			err.handled = true
+			log.error(err)
+			const [groupID, versionID] = this.getGroupVersion(args)
+			return this.renderPage(ctx, groupID, versionID, '@500')
+		}
+		if (resp === 404) {
+			const [groupID, versionID] = this.getGroupVersion(args)
+			return this.renderPage(ctx, groupID, versionID, '@404')
+		}
+		return resp
+	}
+
+	private compile() {
+		try {
+			const files = this.load()
+			// Get rid of groups without a matching group.ts file.
+			for (const group of Object.keys(files)) {
+				if (group === 'base') {
 					continue
 				}
 				if (data[version].info === undefined) {
 					delete data[version]
 				}
 			}
+			// Get rid of versions without a matching info.ts file.
 			const sources: dict = {}
 			for (const [version, spec] of Object.entries(data)) {
 				if (version !== 'base') {
@@ -165,9 +200,9 @@ export class Manager {
 				if (type === 'info') {
 					const info = mods[id] as VersionInfo
 					info.Created = info.Created || 0
+					info.ID = version
 					info.StartURL = info.StartURL || '/'
 					info.Title = info.Title || 'Untitled Prototype'
-					info.VersionID = version
 					versions.push(info)
 				}
 			}
@@ -179,9 +214,6 @@ export class Manager {
 			log.error('componentkit: aborting building of components due to error')
 			return
 		}
-		if (!firstTime) {
-			log.success('Components successfully built!')
-		}
 		// let lexer = lex.html()
 		// if (lexer.error)  {
 		// 	//
@@ -189,11 +221,73 @@ export class Manager {
 		// compile.html(lexer.tokens)
 	}
 
-	// `load` walks the prototype directory and gathers the contents of all
-	// version config, component, and page files.
-	private load() {
-		const versions: VersionedData = {}
-		for (const [filepath, contents] of os.walk(this.root)) {
+	private compileGroupPage(groupID: string) {
+		return {}
+	}
+
+	private compilePage() {
+		return {}
+	}
+
+	private compileStyleSheet(version: any) {
+		const css = []
+		css.push('')
+		return css.join('')
+	}
+
+	private compileVersionInfo(groupID: string, versionID: string) {
+		return {}
+	}
+
+	private getGroupInfos() {
+		const infos = []
+		for (const [groupID, group] of Object.entries(this.groups)) {
+			let info = group.infopage
+			if (!info) {
+				info = this.compileGroupPage(groupID) as GroupInfoPage
+				group.infopage = info
+			}
+			infos.push(info)
+		}
+		infos.sort((a, b) => a.Title.localeCompare(b.Title))
+		return infos
+	}
+
+	private getGroupVersion(args: string[]) {
+		if (args.length < 3) {
+			return ['base', 'site']
+		}
+		return args.slice(0, 2)
+	}
+
+	private getVersionInfos(groupID: string) {
+		const infos = []
+		const group = this.groups[groupID]
+		for (const [versionID, version] of Object.entries(group.versions)) {
+			let info = version.info
+			if (!info) {
+				info = this.compileVersionInfo(groupID, versionID) as VersionInfo
+				version.info = info
+			}
+			infos.push(info)
+		}
+		infos.sort((a, b) => b.Created - a.Created)
+		return infos
+	}
+
+	// `load` walks the protokit directory and gathers the available files into
+	// a meta datastructure.
+	private load(firstTime?: boolean) {
+		if (!firstTime) {
+			log.info('Changed detected. Clearing component cache ...')
+		}
+		this.filecache = {}
+		this.filepaths = {}
+		this.groups = {}
+		this.sitepage = undefined
+		return
+		const files: GroupFiles = {}
+		for (const filepath of os.walk(this.root)) {
 			const segments = filepath.split(path.sep)
 			if (segments.length < 3) {
 				const ver = segments[0]
@@ -288,22 +382,67 @@ export class Manager {
 		return versions
 	}
 
-	private buildPage(source: string) {
-		// ts.createProgram()
+	private buildPage(source: string, variables: string) {
 		return `
 import * as ckit from 'govuk/componentkit/ckit'
 import * as html from 'govuk/componentkit/html'
-import {enumerate, range} from 'govuk/iter'
 import * as web from 'govuk/web'
-
-const a = 20
-const a = 40
+${variables}
 
 export function render(ctx: web.Context): string {
-	for (const i of range(20)) {
-		console.log(i)
-	}
 	return ${source}
 }`
+	}
+
+	private readFile(path: string) {
+		const contents = this.filecache[path]
+		if (contents !== undefined) {
+			return contents
+		}
+		return fs.readFileSync(path, {encoding: 'utf8'})
+	}
+
+	private renderGroupPage(ctx: web.Context, groupID: string) {
+		const group = this.groups[groupID]
+		if (!group) {
+			return 404
+		}
+		let page = group.infopage
+		if (!page) {
+			page = this.compileGroupPage(groupID) as GroupInfoPage
+		}
+		return page.render(ctx, groupID, this.getVersionInfos(groupID))
+	}
+
+	private renderPage(
+		ctx: web.Context,
+		groupID: string,
+		versionID: string,
+		path: string
+	) {
+		return 404
+	}
+
+	private renderPath(ctx: web.Context, args: string[]) {
+		if (!args.length) {
+			return this.renderSitePage(ctx)
+		}
+		const [groupID, versionID, ...urlsegments] = args
+		if (groupID === 'base' && versionID !== 'site') {
+			return ctx.redirect('/base/site')
+		}
+		if (args.length === 1) {
+			return this.renderGroupPage(ctx, groupID)
+		}
+		return this.renderPage(ctx, groupID, versionID, urlsegments.join('/'))
+	}
+
+	private renderSitePage(ctx: web.Context) {
+		let sitepage = this.sitepage
+		if (!sitepage) {
+			sitepage = this.compilePage() as SitePage
+			this.sitepage = sitepage
+		}
+		return sitepage.render(ctx, this.getGroupInfos())
 	}
 }
