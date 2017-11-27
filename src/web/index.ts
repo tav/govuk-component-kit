@@ -24,6 +24,7 @@ export interface URL {
 }
 
 export class Context {
+	error?: Error
 	responseHeaders: {[key: string]: string | number} = {}
 	url: URL
 
