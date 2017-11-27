@@ -7,20 +7,7 @@ import * as log from 'govuk/log'
 import * as os from 'os'
 import * as path from 'path'
 
-function* walkFrom(
-	dir: string,
-	strip: number
-): IterableIterator<[string, string]> {
-	for (const filename of fs.readdirSync(dir)) {
-		const filepath = path.join(dir, filename)
-		if (fs.statSync(filepath).isDirectory()) {
-			yield* walkFrom(filepath, strip)
-		} else {
-			const relpath = filepath.slice(strip)
-			yield [relpath, fs.readFileSync(filepath, {encoding: 'utf8'})]
-		}
-	}
-}
+export function copytree(src: string, dst: string) {}
 
 // `isDirectory` returns whether the given path is a directory. Note that it
 // will return false if the path is not accessible due to permissions.
@@ -42,16 +29,35 @@ export function isFile(path: string) {
 	}
 }
 
-// `walk` traverses the directory recursively and yields the relative path name
-// and contents for all files found.
-export function* walk(dir: string) {
-	let strip = dir.length
-	if (dir[dir.length - 1] !== '/') {
-		strip += 1
+// `rmtree` recursively deletes all the files and directories within the given
+// `dir`.
+export function rmtree(dir: string) {
+	for (const filename of fs.readdirSync(dir)) {
+		const filepath = path.join(dir, filename)
+		if (fs.statSync(filepath).isDirectory()) {
+			rmtree(filepath)
+			fs.rmdirSync(filepath)
+		} else {
+			fs.unlinkSync(filepath)
+		}
 	}
-	yield* walkFrom(dir, strip)
 }
 
+// `walk` traverses the directory recursively and yields the path name for all
+// files found.
+export function* walk(dir: string): IterableIterator<string> {
+	for (const filename of fs.readdirSync(dir)) {
+		const filepath = path.join(dir, filename)
+		if (fs.statSync(filepath).isDirectory()) {
+			yield* walk(filepath)
+		} else {
+			yield filepath
+		}
+	}
+}
+
+// `watch` tracks any changes within the given `dir` and all recursive
+// subdirectories.
 export function watch(dir: string, cb: () => void, throttle = 1000) {
 	const platform = os.platform()
 	if (platform === 'darwin' || platform === 'win32') {
