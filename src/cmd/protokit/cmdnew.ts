@@ -18,11 +18,7 @@ function createVersion(root: string, title: string) {
 	const dir = path.join(root, id)
 	fs.mkdirSync(dir)
 	fs.mkdirSync(path.join(dir, 'components'))
-	fs.mkdirSync(path.join(dir, 'fields'))
 	fs.mkdirSync(path.join(dir, 'pages'))
-	fs.mkdirSync(path.join(dir, 'static'))
-	fs.mkdirSync(path.join(dir, 'text'))
-	fs.mkdirSync(path.join(dir, 'variables'))
 	fs.writeFileSync(
 		path.join(dir, 'version.ts'),
 		`export const Title = ${JSON.stringify(title)}
