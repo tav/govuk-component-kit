@@ -29,18 +29,26 @@ export function isFile(path: string) {
 	}
 }
 
-// `rmtree` recursively deletes all the files and directories within the given
-// `dir`.
-export function rmtree(dir: string) {
+// `rmtree` recursively deletes all the files and directories within and
+// including the given `dir`.
+export function rmtree(dir: string, check = true) {
+	if (check) {
+		try {
+			fs.statSync(dir)
+		} catch (err) {
+			// TODO(tav): Ensure that EACCES errors won't be raised here.
+			return
+		}
+	}
 	for (const filename of fs.readdirSync(dir)) {
 		const filepath = path.join(dir, filename)
 		if (fs.statSync(filepath).isDirectory()) {
-			rmtree(filepath)
-			fs.rmdirSync(filepath)
+			rmtree(filepath, false)
 		} else {
 			fs.unlinkSync(filepath)
 		}
 	}
+	fs.rmdirSync(dir)
 }
 
 // `walk` traverses the directory recursively and yields the path name for all
