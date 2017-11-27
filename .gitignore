@@ -1,5 +1,8 @@
 .DS_Store
 dist/
 node_modules/
-skeleton/
 package-lock.json
+
+!skeleton/
+skeleton/*
+!skeleton/base/
