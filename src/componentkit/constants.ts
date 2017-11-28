@@ -21,6 +21,7 @@ export const WHITESPACE_CHARS = bytes.set(' \n\t')
 
 // Mixed character sets.
 export const LEFT_ANGLE_BRACKET_OR_BRACE_CHARS = bytes.set('<{')
+export const RIGHT_ANGLE_BRACKET_OR_EQUALS_CHARS = bytes.set('>=')
 
 // Compound character sets.
 export const IDENT_CHARS = bytes.set(
@@ -52,6 +53,7 @@ export const AT_SIGN = bytes.codepoint('@')
 export const BACKSLASH = bytes.codepoint('\\')
 export const COLON = bytes.codepoint(':')
 export const COMMA = bytes.codepoint(',')
+export const EQUALS = bytes.codepoint('=')
 export const HASH = bytes.codepoint('#')
 export const HYPHEN = bytes.codepoint('-')
 export const PERIOD = bytes.codepoint('.')

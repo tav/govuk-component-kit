@@ -5,80 +5,109 @@ import * as _ from 'govuk/componentkit/constants'
 import token from 'govuk/componentkit/token'
 import * as lexer from 'govuk/lexer'
 
-function htmlComment(s: lexer.State): lexer.StateFunction {
-	s.acceptUntil(_.HYPHEN)
-	if (s.startsWith(_.HTML_COMMENT_END_STRING)) {
-		s.emit(token.TEXT)
-		s.consume(_.HTML_COMMENT_END_STRING.length)
-		s.emit(token.HTML_COMMENT_END)
+function htmlAttr(l: lexer.State): lexer.StateFunction {
+	if (l.acceptNext(_.RIGHT_ANGLE_BRACKET)) {
+		l.emit(token.HTML_TAG_OPEN_RIGHT_DELIMITER)
 		return htmlContent
 	}
-	if (s.eof()) {
+	l.acceptUntil(_.RIGHT_ANGLE_BRACKET_OR_EQUALS_CHARS)
+	l.emit(token.HTML_ATTR)
+	if (l.acceptNext(_.RIGHT_ANGLE_BRACKET)) {
+		l.emit(token.HTML_TAG_OPEN_RIGHT_DELIMITER)
+		return htmlContent
+	}
+	// Skip the equals sign
+	l.skip(1)
+	return htmlContent
+}
+
+function htmlComment(l: lexer.State): lexer.StateFunction {
+	l.acceptUntil(_.HYPHEN)
+	if (l.startsWith(_.HTML_COMMENT_END_STRING)) {
+		l.emit(token.TEXT)
+		l.consume(_.HTML_COMMENT_END_STRING.length)
+		l.emit(token.HTML_COMMENT_END)
+		return htmlContent
+	}
+	if (l.eof()) {
 		return
 	}
 	return htmlComment
 }
 
-function htmlContent(s: lexer.State): lexer.StateFunction {
-	if (s.acceptUntil(_.LEFT_ANGLE_BRACKET_OR_BRACE_CHARS)) {
-		s.emit(token.TEXT)
+function htmlContent(l: lexer.State): lexer.StateFunction {
+	if (l.acceptUntil(_.LEFT_ANGLE_BRACKET_OR_BRACE_CHARS)) {
+		l.emit(token.TEXT)
 	}
-	if (s.acceptNext(_.LEFT_ANGLE_BRACKET)) {
-		if (s.startsWith(_.HTML_COMMENT_START_STRING)) {
-			s.emit(token.HTML_COMMENT_START)
+	if (l.acceptNext(_.LEFT_ANGLE_BRACKET)) {
+		if (l.startsWith(_.HTML_COMMENT_START_STRING)) {
+			l.emit(token.HTML_COMMENT_START)
 			return htmlComment
 		}
-		if (s.acceptNext(_.SLASH)) {
-			s.emit(token.HTML_TAG_CLOSE_LEFT_DELIMITER)
+		if (l.acceptNext(_.SLASH)) {
+			l.emit(token.HTML_TAG_CLOSE_LEFT_DELIMITER)
 			return htmlTagClose
 		}
-		if (s.willAcceptNext(_.ALPHA_CHARS)) {
-			s.emit(token.HTML_TAG_OPEN_LEFT_DELIMITER)
+		if (l.willAcceptNext(_.ALPHA_CHARS)) {
+			l.emit(token.HTML_TAG_OPEN_LEFT_DELIMITER)
 			return htmlTagOpen
 		}
-		s.emit(token.TEXT)
+		l.emit(token.TEXT)
 		return htmlContent
 	}
-	if (s.startsWith(_.LEFT_DOUBLE_BRACE_STRING) && s.prev() !== _.BACKSLASH) {
-		return template
+	if (l.startsWith(_.LEFT_DOUBLE_BRACE_STRING)) {
+		return templateOpen(htmlContent)
 	}
-	if (s.eof()) {
+	if (l.eof()) {
 		return
 	}
-	// If we've reached here, then there's at least a left brace that needs to
-	// be consumed.
-	s.next()
-	s.emit(token.TEXT)
+	// If we've reached here, then there's a single left brace that needs to be
+	// consumed.
+	l.next()
+	l.emit(token.TEXT)
 	return htmlContent
 }
 
-function htmlTagAttrs(s: lexer.State): lexer.StateFunction {
-	return htmlContent
-}
-function htmlTagClose(s: lexer.State): lexer.StateFunction {
-	s.acceptNext(_.ALPHA_CHARS)
-	s.acceptWhile(_.IDENT_CHARS)
-	if (!s.hasValue()) {
-		return s.setError('foo')
+function htmlTagClose(l: lexer.State): lexer.StateFunction {
+	if (l.acceptWhile(_.WHITESPACE_CHARS)) {
+		l.skip()
 	}
-	s.emit(token.HTML_TAG)
-	if (s.acceptWhile(_.WHITESPACE_CHARS)) {
-		s.skip()
+	l.acceptNext(_.ALPHA_CHARS)
+	l.acceptWhile(_.IDENT_CHARS)
+	if (!l.hasValue()) {
+		return l.setError('Expected html tag close')
 	}
+	l.emit(token.HTML_TAG)
+	if (l.acceptWhile(_.WHITESPACE_CHARS)) {
+		l.skip()
+	}
+	if (!l.acceptNext(_.RIGHT_ANGLE_BRACKET)) {
+		l.setError('Expected > to close the html tag')
+	}
+	l.emit(token.HTML_TAG_CLOSE_RIGHT_DELIMITER)
 	return htmlContent
 }
 
-function htmlTagOpen(s: lexer.State): lexer.StateFunction {
-	s.acceptNext(_.ALPHA_CHARS)
-	s.acceptWhile(_.IDENT_CHARS)
-	s.emit(token.HTML_TAG)
-	return htmlTagAttrs
+function htmlTagOpen(l: lexer.State): lexer.StateFunction {
+	l.acceptNext(_.ALPHA_CHARS)
+	l.acceptWhile(_.IDENT_CHARS)
+	l.emit(token.HTML_TAG)
+	if (l.acceptNext(_.RIGHT_ANGLE_BRACKET)) {
+		l.emit(token.HTML_TAG_OPEN_RIGHT_DELIMITER)
+		return htmlContent
+	}
+	if (!l.acceptWhile(_.WHITESPACE_CHARS)) {
+		return l.setError('Expected whitespace after tag opening')
+	}
+	// Discard the expected whitespace.
+	l.skip()
+	return htmlAttr
 }
 
-function mergeTextTokens(s: lexer.State) {
+function mergeTextTokens(l: lexer.State) {
 	const tokens = []
 	let prev
-	for (const t of s.tokens) {
+	for (const t of l.tokens) {
 		if (t.type === token.TEXT) {
 			if (prev) {
 				prev.value += t.value
@@ -96,40 +125,90 @@ function mergeTextTokens(s: lexer.State) {
 	if (prev) {
 		tokens.push(prev)
 	}
-	s.tokens = tokens
+	l.tokens = tokens
 }
 
-function printTokens(s: lexer.State) {
-	for (const t of s.tokens) {
-		console.log([token[t.type], t.value])
+function templateContent(l: lexer.State): lexer.StateFunction {
+	if (l.acceptUntil(_.LEFT_BRACE)) {
+		l.emit(token.TEXT)
 	}
+	if (l.startsWith(_.LEFT_DOUBLE_BRACE_STRING)) {
+		return templateOpen(templateContent)
+	}
+	if (l.eof()) {
+		return
+	}
+	// If we've reached here, then there's a single left brace that needs to be
+	// consumed.
+	l.next()
+	l.emit(token.TEXT)
+	return templateContent
 }
 
-function template(s: lexer.State): lexer.StateFunction {
-	return
+export function css(input: string) {
+	const l = new lexer.State(input).run(htmlContent)
+	if (!l.error) {
+		mergeTextTokens(l)
+	}
+	return l
 }
 
 export function html(input: string) {
-	console.log(`lexing: ${input}`)
 	const l = new lexer.State(input).run(htmlContent)
-	mergeTextTokens(l)
-	printTokens(l)
-	// console.log(s.tokens)
+	if (!l.error) {
+		mergeTextTokens(l)
+	}
+	return l
 }
 
-// compile(parse(lex(`hello <foo> bar {{props.x}}</foo>`)))
-html(`<foo bar=20></foo>`)
+export function template(input: string) {
+	const l = new lexer.State(input).run(htmlContent)
+	if (!l.error) {
+		mergeTextTokens(l)
+	}
+	return l
+}
 
-// import {Context} from 'service'
+function compile(l: lexer.State, cid: string) {
+	if (l.error) {
+		console.log('Unexpected error:', l.error.value)
+		return
+	}
+	let idx = 0
+	const out = ['[']
+	const seen = new Set()
+	const stack = []
+	const tokens = l.tokens
+	while (idx < tokens.length) {
+		let t = tokens[idx]
+		switch (t.type) {
+			case token.HTML_TAG_OPEN_LEFT_DELIMITER:
+				t = tokens[++idx]
+				if (!t || t.type !== token.HTML_TAG) {
+					return 'ERROR'
+				}
+				if (isLowerCaseTag(t.value)) {
+					out.push(`html.${t.value}(ctx, '${cid}', {`)
+				} else {
+					out.push('')
+					seen.add(t.value)
+				}
+		}
+		console.log([token[t.type], t.value])
+		idx++
+	}
+	out.push(']')
+	return [out.join(''), seen]
+}
 
-// interface Props {
-// 	x: string
-// }
+function isLowerCaseTag(tag: string) {
+	const code = tag.charCodeAt(0)
+	return code >= 97 && code <= 122
+}
 
-// export default function Component(ctx: Context, props: Props): string {
-// 	return render([
-// 		'hello ',
-// 		render(foo(ctx, {children: [' bar ', render(escape(props.x))]})),
-// 	])
-// 	return [foo(ctx, {bar: '20'})]
-// }
+console.log(
+	compile(
+		html(`<div foo>Check out: <DateField></DateField></div>`),
+		'DateField'
+	)
+)
